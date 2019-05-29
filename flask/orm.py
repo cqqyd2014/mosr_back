@@ -12,6 +12,65 @@ postgresql_conn_str="postgresql+psycopg2://postgres:Wang1980@localhost:33133/tes
 engine=create_engine(postgresql_conn_str)
 Base = declarative_base()
 
+
+
+
+
+class SystemDataCorp(Base):
+    __tablename__="system_data_corp"
+    corp_uscc = Column(String(18),primary_key=True)
+    corp_name = Column(String(128),unique=True)
+    
+
+    @staticmethod
+    def delete_all(db_session):
+        db_session.query(SystemDataCorp).all().delete()
+    
+    def __repr__(self):
+        return self.corp_name
+    
+    def to_json(self):
+        json_string={
+            'corp_uscc':self.corp_uscc,
+            'corp_name':self.corp_name,
+            
+
+        }
+        return json_string
+
+    @staticmethod
+    def from_json(json_string):
+        return SystemPar(corp_uscc=json_string.get('corp_uscc'),corp_name=json_string.get('corp_name'))
+
+
+class SystemData(Base):
+    __tablename__="system_data"
+    sys_uuid = Column(String(37),primary_key=True)
+    sys_name = Column(String(128),unique=True)
+    sys_end_date=Column(Date)
+    sys_count=Column(Integer) # 1为数字2为文本3为日期4为日期时间（含毫秒）
+
+    @staticmethod
+    def delete_all(db_session):
+        db_session.query(SystemData).all().delete()
+    
+    def __repr__(self):
+        return self.sys_name
+    
+    def to_json(self):
+        json_string={
+            'sys_uuid':self.sys_uuid,
+            'sys_name':self.sys_name,
+            'sys_end_date':json.dumps(self.sys_end_date,cls=DateTimeEncoder),
+            'sys_count':self.sys_count
+
+        }
+        return json_string
+
+    @staticmethod
+    def from_json(json_string):
+        return SystemPar(par_code=json_string.get('sys_uuid'),par_desc=json_string.get('sys_name'),par_value=json_string.get('sys_end_date'),par_type=json_string.get('sys_count'))
+
 class SystemPar(Base):
     __tablename__="system_par"
     par_code = Column(String(64),primary_key=True)
@@ -40,12 +99,42 @@ class SystemPar(Base):
     def from_json(json_string):
         return SystemPar(par_code=json_string.get('par_code'),par_desc=json_string.get('par_desc'),par_value=json_string.get('par_value'),par_type=json_string.get('par_type'))
         
+class NodeLabelColor(Base):
+    __tablename__ = "node_label_color"
+    n_lable_classs = Column(String(256),primary_key=True)
+    n_color=Column(String(6))
+    n_lable_display = Column(String(256),unique=True)
+    
+
+    def to_json(self):
+        json_string={
+            'n_lable_classs':self.n_lable_classs,
+            'n_color':self.n_color,
+            'n_display':self.n_display,
+            
+
+        }
+        return json_string
+
+    @staticmethod
+    def delete_all(db_session):
+        db_session.query(NodeLabelColor).all().delete()
+    
+    def saveOfUpdate(self,session):
+        db_data = session.query(NodeLabelColor).filter(NodeLabelColor.n_lable_classs==self.n_lable_classs).one_or_none()
+        if db_data==None:
+            session.add(self)
+        else:
+            db_data.n_color=self.n_color
+            db_data.n_display=self.n_display
+
+            
 
 class SystemCode(Base):
     __tablename__ = "system_code"
     code_main = Column(String(64),primary_key=True)
     code_desc = Column(String(256))
-    code_code = Column(String(128),primary_key = True)
+    code_code = Column(String(128),primary_key = True,unique=True)
     code_value = Column(String(1024))
     code_type=Column(Integer) # 1为数字2为文本3为日期4为日期时间（含毫秒）
 
@@ -75,14 +164,38 @@ class SystemCode(Base):
             db_data.code_type=self.code_type
             
 
+class QueryTemplate(Base):
+    __tablename__ = "query_template"
+    qt_uuid = Column(String(37),primary_key=True)
+    qt_datetime = Column(DateTime)
+    qt_object = Column(Text)
+    qt_cypher = Column(Text)
+    qt_title= Column(String(1024))
+    qt_desc = Column(Text)
+
+    def to_json(self):
+        
+        json_string={
+            'qt_uuid':self.qt_uuid,
+            'qt_datetime':json.dumps(self.qt_datetime,cls=DateTimeEncoder),
+            'qt_object':self.qt_object,
+            'qt_cypher':self.qt_cypher,
+            'qt_title':self.qt_title,
+            'qt_desc':self.qt_desc,
+
+        }
+        
+        
+        return json_string
+
+
 class ProcessDetail(Base):
     __tablename__ = "process_detail"
     pd_uuid = Column(String(37),primary_key=True)
     pd_start_datetime = Column(DateTime)
-    pd_catalog = Column(String(32))
+    pd_catalog = Column(String(32),ForeignKey('system_code.code_code'))
     pd_command = Column(Text)
-    pd_end_datetime=Column(DateTime)
-    pd_current_process=Column(Boolean)
+
 
     def to_json(self):
         
@@ -91,8 +204,6 @@ class ProcessDetail(Base):
             'pd_start_datetime':json.dumps(self.pd_start_datetime,cls=DateTimeEncoder),
             'pd_catalog':self.pd_catalog,
             'pd_command':self.pd_command,
-            'pd_end_datetime':json.dumps(self.pd_end_datetime,cls=DateTimeEncoder),
-            'pd_current_process':self.pd_current_process,
 
         }
         
@@ -101,7 +212,7 @@ class ProcessDetail(Base):
 
     @staticmethod
     def delete_all(db_session):
-        db_session.query(ProcessDetail).delete()
+        db_session.query(ProcessDetail).all().delete()
     
     def saveOfUpdate(self,session):
         db_data = session.query(ProcessDetail).filter(ProcessDetail.pd_uuid==self.pd_uuid).one_or_none()
@@ -111,8 +222,7 @@ class ProcessDetail(Base):
             db_data.pd_start_datetime=self.pd_start_datetime
             db_data.pd_catalog=self.pd_catalog
             db_data.pd_command=self.pd_command
-            db_data.pd_end_datetime=self.pd_end_datetime
-            db_data.pd_current_process=self.pd_current_process
+
 
 
 
@@ -158,8 +268,38 @@ def init_db(db_session):
     db_session.add(systemCode)
     systemCode=SystemCode(code_main='process_type',code_desc='任务类型',code_code='customizedataimport',code_value='自定义数据采集',code_type=2)
     db_session.add(systemCode)
+    #节点色彩
+    systemCode=SystemCode(code_main='node_color',code_desc='节点色彩',code_code='FFFFCC',code_value='FFFFCC',code_type=2)
+    db_session.add(systemCode)
+    systemCode=SystemCode(code_main='node_color',code_desc='节点色彩',code_code='CCFFFF',code_value='CCFFFF',code_type=2)
+    db_session.add(systemCode)
+    systemCode=SystemCode(code_main='node_color',code_desc='节点色彩',code_code='FFCCCC',code_value='FFCCCC',code_type=2)
+    db_session.add(systemCode)
+    systemCode=SystemCode(code_main='node_color',code_desc='节点色彩',code_code='CCCCFF',code_value='CCCCFF',code_type=2)
+    db_session.add(systemCode)
+    systemCode=SystemCode(code_main='node_color',code_desc='节点色彩',code_code='99CCCC',code_value='99CCCC',code_type=2)
+    db_session.add(systemCode)
+    systemCode=SystemCode(code_main='node_color',code_desc='节点色彩',code_code='99CCFF',code_value='99CCFF',code_type=2)
+    db_session.add(systemCode)
+    systemCode=SystemCode(code_main='node_color',code_desc='节点色彩',code_code='CCCCCC',code_value='CCCCCC',code_type=2)
+    db_session.add(systemCode)
+    systemCode=SystemCode(code_main='node_color',code_desc='节点色彩',code_code='CCCC99',code_value='CCCC99',code_type=2)
+    db_session.add(systemCode)
+    systemCode=SystemCode(code_main='node_color',code_desc='节点色彩',code_code='3399CC',code_value='3399CC',code_type=2)
+    db_session.add(systemCode)
+    systemCode=SystemCode(code_main='node_color',code_desc='节点色彩',code_code='FFCC99',code_value='FFCC99',code_type=2)
+    db_session.add(systemCode)
+    systemCode=SystemCode(code_main='node_color',code_desc='节点色彩',code_code='99CC33',code_value='99CC33',code_type=2)
+    db_session.add(systemCode)
+    
+
     #测试数据
-    processDetail=ProcessDetail(pd_uuid=str(uuid.uuid1()),pd_start_datetime=datetime.datetime.now(),pd_catalog='systest',pd_command='SQL1',pd_end_datetime=datetime.datetime.now()+datetime.timedelta(days=1),pd_current_process=True)
+    processDetail=ProcessDetail(pd_uuid=str(uuid.uuid1()),pd_start_datetime=datetime.datetime.now(),pd_catalog='systest',pd_command='SQL1Annotations are a concept used internally by SQLAlchemy in order to store additional information along with ClauseElement objects. A Python dictionary is associated with a copy of the object, which contains key/value pairs significant to various internal systems, mostly within the ORM:')
     db_session.add(processDetail)
+    systemData=SystemData(sys_uuid=str(uuid.uuid1()),sys_name='统一社会编码的法人机构',sys_end_date=datetime.datetime.now(),sys_count=10000)
+    db_session.add(systemData)
+    systemData=SystemData(sys_uuid=str(uuid.uuid1()),sys_name='自然人',sys_end_date=datetime.datetime.now(),sys_count=30000)
+    db_session.add(systemData)
+
     db_session.commit()
     print('init db ok')

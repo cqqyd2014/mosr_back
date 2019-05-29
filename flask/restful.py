@@ -9,7 +9,7 @@ class TableRestful(object):
         
     def _limit(self):
         if 'limit' in self.args:
-            self.q_limit=self.q_order.limit(int(args['limit']))
+            self.q_limit=self.q_order.limit(int(self.args['limit']))
         else:
             self.q_limit=self.q_order
         
@@ -21,7 +21,13 @@ class TableRestful(object):
     def _ordery_by(self):
         pass
 
+    @abstractmethod
+    def _join(self):
+        pass
+
+
     def get_rs_all(self):
+        self._join()
         self._query_parmeter()
         self._ordery_by()
         self._limit()
