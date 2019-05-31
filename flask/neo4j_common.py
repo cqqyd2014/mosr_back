@@ -55,7 +55,7 @@ def getPath(cypher_sql):
                
             relationships_object=[]
             relationships_colors={}
-            relationships_colors_flag=0
+            
             relationships=graph.relationships
             for r in relationships:
                 r_object=buildEdges(r)
@@ -63,12 +63,13 @@ def getPath(cypher_sql):
                 data=r_object['data']
                 #relationship的颜色
                 if data['label'] not in relationships_colors:
-                    relationships_colors[data['label']]=colors[relationships_colors_flag%len(colors)]
-                data['line-color']='#'+relationships_colors[data['label']]
+                    relationships_colors[data['label']]=colors[flag%len(colors)]
+                    flag+=1
+                #data['line-color']='#'+relationships_colors[data['label']]
 
             
             session.close()
-            return jsonify(elements = {"nodes": nodes_object, "edges": relationships_object,"colors":nodes_colors})
+            return jsonify(elements = {"nodes": nodes_object, "edges": relationships_object,"colors":nodes_colors,"edge_colors":relationships_colors})
 
 
 def createEdge(data,type):

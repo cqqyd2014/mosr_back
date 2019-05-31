@@ -175,7 +175,17 @@ def neo4j_data():
         
     else:
         pass
-
+@app.route('/my_templates/<uuid>', methods=['DELETE'])
+def delete_my_templates(uuid):
+    
+    if len(uuid) == 0:
+        abort(404)
+    db_session=create_session()
+    print(uuid)
+    post=db_session.query(QueryTemplate).filter(QueryTemplate.qt_uuid==uuid).delete()
+    db_session.commit()
+    db_session.close()
+    return jsonify({'result': True})
 
 @app.route('/my_templates/')
 def my_templates():
