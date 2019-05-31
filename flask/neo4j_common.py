@@ -125,6 +125,7 @@ def buildNodes(nodeRecord):
                         name=item[1]
         #label为labels数组的多个形成的组合，用-连接
         label='-'.join(labels)
+        
         data = {"id": str(nodeRecord.id), "label":label,"labels": labels}
         data.update(items)
         #data["classes"]=labels
@@ -135,6 +136,7 @@ def buildEdges(relationRecord):
         items={}
         for item in relationRecord.items():
                 items[item[0]]=item[1]
-        data = {"id":relationRecord.id,"source": str(relationRecord.start_node.id),"target": str(relationRecord.end_node.id),"label": relationRecord.type}
+
+        data = {"id":str(relationRecord.id),"source": str(relationRecord.start_node.id),"target": str(relationRecord.end_node.id),"label": relationRecord.type}
         data.update(items)
         return {"data": data}
