@@ -162,6 +162,29 @@ class SystemCode(Base):
             db_data.code_value=self.code_value
             db_data.f_trade=self.f_trade
             db_data.code_type=self.code_type
+
+class Neno4jCatalog(Base):
+    __tablename__ = "neo4j_catlog"
+    nc_uuid = Column(String(37),primary_key=True)
+    nc_update_datetime = Column(DateTime)
+    nc_type = Column(String(64))
+    nc_value = Column(String(512))
+    
+
+    def to_json(self):
+        
+        json_string={
+            'nc_uuid':self.nc_uuid,
+            'nc_update_datetime':json.dumps(self.nc_update_datetime,cls=DateTimeEncoder),
+            'nc_type':self.nc_type,
+            'nc_value':self.nc_value,
+           
+
+        }
+        
+        
+        return json_string
+
             
 
 class QueryTemplate(Base):

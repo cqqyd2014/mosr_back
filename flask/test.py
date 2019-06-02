@@ -2,7 +2,7 @@ from flask import Flask, request, session, g, redirect, url_for, \
      abort, render_template, flash,jsonify
 import json
 from flask_cors import CORS
-from orm import create_session,SystemPar,init_db,SystemCode,ProcessDetail,SystemData,QueryTemplate
+from orm import create_session,SystemPar,init_db,SystemCode,ProcessDetail,SystemData,QueryTemplate,Neno4jCatalog
 from restful import TableRestful
 import os
 from neo4j import GraphDatabase
@@ -258,6 +258,40 @@ def node_colors():
         post=db_session.query(NodeColor).filter(NodeColor.n_lable==request.args['n_lable']).all()
         db_session.close()
         return  jsonify(post.to_json())
+
+
+@app.route('/neo4j_catlog/',methods=['GET'])
+def neo4j_catlog():
+    empty=[]
+    if not request.args:
+        db_session=create_session()
+        posts=db_session.query(Neno4jCatalog).all()
+        for post in posts:
+            empty.append(post.to_json())
+        db_session.close()
+        return jsonify(empty)
+    else:
+        db_session=create_session()
+        posts=db_session.query(Neno4jCatalog).filter(Neno4jCatalog.nc_type==request.args['nc_type']).all()
+        for post in posts:
+            empty.append(post.to_json())
+        db_session.close()
+        return  jsonify(empty)
+
+
+@app.route('/neo4j_catlog/',methods=['POST'])
+def post_neo4j_catlog():
+    print(request.get_json(silent=True))
+    if not request.json :
+        abort(400)
+    neno4jCatalog=Neno4jCatalog(nc_uuid=str(uuid.uuid1()),nc_update_datetime=datetime.datetime.now(),nc_type=request.json['nc_type'],nc_value=request.json['nc_value'])
+    db_session=create_session()
+    db_session.add(neno4jCatalog)
+    pd_json= neno4jCatalog.to_json()
+    db_session.commit()
+    db_session.close()
+    return jsonify({'neo4j_catlog':pd_json}), 201
+
 
 
 @app.route('/SystemCode/',methods=['GET'])
