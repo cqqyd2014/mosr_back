@@ -85,7 +85,7 @@ def nodes_upload():
     items_jsons=json.loads(column_items)
     row_flag=2#从第二行开始导入
     driver=GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "Wang1980"))
-    print("start")
+    
     with driver.session() as session:
         while sht.range('A'+str(row_flag)).value!=None:
             #处理一行数据
@@ -109,7 +109,7 @@ def nodes_upload():
             #print(label_items)
             create_string=createNode(row_data,node_type,label_items)
             session.run(create_string)
-            print(create_string)
+            
             row_flag+=1
         session.close()
     wb.close()
@@ -136,7 +136,7 @@ def edges_upload():
     items_jsons=json.loads(column_items)
     row_flag=2#从第二行开始导入
     driver=GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "Wang1980"))
-    print("start")
+    
     with driver.session() as session:
         while sht.range('A'+str(row_flag)).value!=None:
             #处理一行数据
@@ -160,7 +160,7 @@ def edges_upload():
             #print(label_items)
             create_string=createEdge(row_data,edge_type)
             session.run(create_string)
-            print(create_string)
+            
             row_flag+=1
         session.close()
     wb.close()
@@ -181,7 +181,7 @@ def delete_my_templates(uuid):
     if len(uuid) == 0:
         abort(404)
     db_session=create_session()
-    print(uuid)
+    
     post=db_session.query(QueryTemplate).filter(QueryTemplate.qt_uuid==uuid).delete()
     db_session.commit()
     db_session.close()
@@ -281,7 +281,7 @@ def neo4j_catlog():
 
 @app.route('/neo4j_catlog/',methods=['POST'])
 def post_neo4j_catlog():
-    print(request.get_json(silent=True))
+    request.get_json(silent=True)
     if not request.json :
         abort(400)
     neno4jCatalog=Neno4jCatalog(nc_uuid=str(uuid.uuid1()),nc_update_datetime=datetime.datetime.now(),nc_type=request.json['nc_type'],nc_value=request.json['nc_value'])
@@ -322,7 +322,7 @@ def get_systemcodes():
 
 @app.route('/ProcessDetail/',methods=['POST'])
 def post_process_detail():
-    print(request.get_json(silent=True))
+    request.get_json(silent=True)
     if not request.json :
         abort(400)
     processDetail=ProcessDetail(pd_uuid=str(uuid.uuid1()),pd_start_datetime=datetime.datetime.now(),pd_catalog=request.json['pd_catalog'],pd_command=request.json['pd_command'])
@@ -337,7 +337,7 @@ def post_process_detail():
 
 @app.route('/SaveTemplate/',methods=['POST'])
 def save_template():
-    print(request.get_json(silent=True))
+    request.get_json(silent=True)
     if not request.json :
         abort(400)
     queryTemplate=QueryTemplate(qt_uuid=str(uuid.uuid1()),qt_datetime=datetime.datetime.now(),qt_object=request.json['qt_object'],qt_cypher=request.json['qt_cypher'],qt_title=request.json['qt_title'],qt_desc=request.json['qt_desc'])

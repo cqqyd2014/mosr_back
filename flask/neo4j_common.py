@@ -12,7 +12,7 @@ def getJson(cypher_sql):
         driver=GraphDatabase.driver(bolt_conncect_string, auth=(user, password))
         with driver.session() as session:
             result = session.run(cypher_sql).data()
-            print(result)
+            
             
 
             
@@ -86,7 +86,7 @@ def createEdge(data,type):
                         temp_string+=key+":\'"+value+"\',"
         temp_string="{"+temp_string[:len(temp_string)-1]+"}"
         create_string='MATCH (a),(b) WHERE a.ID = "'+start+'" AND b.ID = "'+end+'"CREATE (a)-[r:'+type+' '+temp_string+']->(b)'
-        print(create_string)
+        
         return create_string
 
 
