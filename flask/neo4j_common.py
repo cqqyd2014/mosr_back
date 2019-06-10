@@ -8,6 +8,11 @@ user='neo4j'
 password='Wang1980'
 
 
+
+
+
+
+
 def getJson(cypher_sql):
         driver=GraphDatabase.driver(bolt_conncect_string, auth=(user, password))
         with driver.session() as session:

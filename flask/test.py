@@ -10,6 +10,8 @@ from neo4j_common import buildNodes,buildEdges,createNode,getPath,getJson,create
 import datetime
 import uuid
 import xlwings as xw
+from common import Base64Uri
+import urllib
 
 app=Flask(__name__)
 CORS(app, resources=r'/*')
@@ -171,7 +173,7 @@ def edges_upload():
 @app.route('/neo4jdata/')
 def neo4j_data():
     if  'neo4jgraph_cypher' in request.args:
-        return getPath(request.args['neo4jgraph_cypher'])
+        return getPath(Base64Uri.decode(request.args['neo4jgraph_cypher']))
         
     else:
         pass
@@ -199,9 +201,11 @@ def my_templates():
         return jsonify(empty)
     else:
         db_session=create_session()
-        post=db_session.query(SystemPar).filter(SystemPar.par_code==request.args['par_code']).one()
+        posts=db_session.query(QueryTemplate).filter(QueryTemplate.qt_type==request.args['qt_type']).all()
+        for post in posts:
+            empty.append(post.to_json())
         db_session.close()
-        return  jsonify(post.to_json())
+        return  jsonify(empty)
 
 
     
@@ -340,7 +344,9 @@ def save_template():
     request.get_json(silent=True)
     if not request.json :
         abort(400)
-    queryTemplate=QueryTemplate(qt_uuid=str(uuid.uuid1()),qt_datetime=datetime.datetime.now(),qt_object=request.json['qt_object'],qt_cypher=request.json['qt_cypher'],qt_title=request.json['qt_title'],qt_desc=request.json['qt_desc'])
+    qt_object=Base64Uri.decode(request.json['qt_object'])
+    qt_cypher=Base64Uri.decode(request.json['qt_cypher'])
+    queryTemplate=QueryTemplate(qt_uuid=str(uuid.uuid1()),qt_datetime=datetime.datetime.now(),qt_type=request.json['qt_type'],qt_object=qt_object,qt_cypher=qt_cypher,qt_title=request.json['qt_title'],qt_desc=request.json['qt_desc'])
     db_session=create_session()
     db_session.add(queryTemplate)
     pd_json= queryTemplate.to_json()
