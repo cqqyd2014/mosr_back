@@ -2,7 +2,7 @@ from flask import Flask, request, session, g, redirect, url_for, \
      abort, render_template, flash,jsonify
 import json
 from flask_cors import CORS
-from orm import create_session,SystemPar,init_db,SystemCode,ProcessDetail,SystemData,QueryTemplate,Neno4jCatalog
+from mosr_back_orm.orm import create_session,SystemPar,init_db,SystemCode,ProcessDetail,SystemData,QueryTemplate,Neno4jCatalog
 from restful import TableRestful
 import os
 from neo4j import GraphDatabase
@@ -10,8 +10,16 @@ from neo4j_common import buildNodes,buildEdges,createNode,getPath,getJson,create
 import datetime
 import uuid
 import xlwings as xw
-from common import Base64Uri
+from python_common.common import Base64Uri
+#
 import urllib
+
+
+import sys
+sys.path.append("python_common")
+sys.path.append("mosr_back_orm")
+from python_common.database_common import Database
+
 
 app=Flask(__name__)
 CORS(app, resources=r'/*')
@@ -177,6 +185,80 @@ def neo4j_data():
         
     else:
         pass
+
+@app.route('/test_connection/',methods=['POST'])
+def test_connection():
+    
+    request.get_json(silent=True)
+    db_type=request.json['db_type']
+    db_address=request.json['db_address']
+    db_port=request.json['db_port']
+    db_name=request.json['db_name']
+    db_username=request.json['db_username']
+    db_password=request.json['db_password']
+    database=Database(db_type,db_address,db_port,db_name,db_username,db_password)
+    #print(database.db_type)
+    return jsonify(database.testConnection())
+
+@app.route('/get_tables/',methods=['POST'])
+def get_tables():
+    
+    request.get_json(silent=True)
+    db_type=request.json['db_type']
+    db_address=request.json['db_address']
+    db_port=request.json['db_port']
+    db_name=request.json['db_name']
+    db_username=request.json['db_username']
+    db_password=request.json['db_password']
+    database=Database(db_type,db_address,db_port,db_name,db_username,db_password)
+    database.getConnection()
+    tables=database.getTables()
+    database.closeConnection()
+    return jsonify(tables)
+        
+  
+@app.route('/get_cols/',methods=['POST'])
+def get_cols():
+    
+    request.get_json(silent=True)
+    db_type=request.json['db_type']
+    db_address=request.json['db_address']
+    db_port=request.json['db_port']
+    db_name=request.json['db_name']
+    db_username=request.json['db_username']
+    db_password=request.json['db_password']
+    select_table=request.json['select_table']
+    database=Database(db_type,db_address,db_port,db_name,db_username,db_password)
+    database.getConnection()
+    cols=database.getColumn(select_table)
+    #print("cols")
+    #print(jsonify(cols))
+    database.closeConnection()
+    return jsonify(cols)
+
+@app.route('/get_top_row_cells/',methods=['POST'])
+def get_top_row_cells():
+    
+    request.get_json(silent=True)
+    db_type=request.json['db_type']
+    db_address=request.json['db_address']
+    db_port=request.json['db_port']
+    db_name=request.json['db_name']
+    db_username=request.json['db_username']
+    db_password=request.json['db_password']
+    select_table=request.json['select_table']
+    top=request.json['top']
+    database=Database(db_type,db_address,db_port,db_name,db_username,db_password)
+    database.getConnection()
+    cols=database.getColumn(select_table)
+    print(cols)
+    cells=database.getTopRowCells(select_table,top,cols)
+    #print("cols")
+    #print(jsonify(cols))
+    database.closeConnection()
+    return jsonify(cells)
+
+
 @app.route('/my_templates/<uuid>', methods=['DELETE'])
 def delete_my_templates(uuid):
     
