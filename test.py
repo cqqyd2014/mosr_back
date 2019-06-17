@@ -2,17 +2,26 @@ from flask import Flask, request, session, g, redirect, url_for, \
      abort, render_template, flash,jsonify
 import json
 from flask_cors import CORS
-from mosr_back_orm.orm import create_session,SystemPar,init_db,SystemCode,ProcessDetail,SystemData,QueryTemplate,Neno4jCatalog
+from mosr_back_orm.orm import create_session,SystemPar,init_db,SystemCode,ProcessDetail,SystemData,QueryTemplate,Neno4jCatalog,JobQueue,ImportData
 from restful import TableRestful
 import os
 from neo4j import GraphDatabase
 from neo4j_common import buildNodes,buildEdges,createNode,getPath,getJson,createEdge
 import datetime
 import uuid
-import xlwings as xw
 from python_common.common import Base64Uri
-#
+import decimal
 import urllib
+
+from flask.json import JSONEncoder as _JSONEncoder
+class JSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, decimal.Decimal):  # for decimal
+            return float(obj)
+        elif isinstance(obj, datetime.datetime):  # for datetime
+            return obj.strftime("%Y-%m-%d %H:%M:%S")
+        return json.JSONEncoder.default(self, obj)
+
 
 
 import sys
@@ -22,6 +31,7 @@ from python_common.database_common import Database
 
 
 app=Flask(__name__)
+app.json_encoder = JSONEncoder
 CORS(app, resources=r'/*')
 temp_dir="d:/temp/"
 
@@ -76,6 +86,62 @@ def convertToTitle(n):
             n = n//26
         return rStr
 
+
+
+   # queue中保存的数据应该为导入任务，包括sql的信息、字段信息以及将要生成的数据文件名
+
+    #另外，还有一个现有数据列表
+
+
+
+
+@app.route('/import_queue_upload/',methods=['POST'])
+def import_queue_upload():
+
+    
+    db_type=request.form.get('db_type')
+    db_address=request.form.get('db_address')
+    db_port=request.form.get('db_port')
+    db_name=request.form.get('db_name')
+    db_username=request.form.get('db_username')
+    db_password=request.form.get('db_password')
+    select_table=request.form.get('select_table')
+    column_items=request.form.get('column_items')
+    label_items=request.form.get('label_items')
+    node_edge=request.form.get('node_edge')
+    edge_type=request.form.get('edge_type')
+    #从数据库得到neo4j的安装路径
+    db_session=create_session()
+    import_neo4j_install_dir=db_session.query(SystemPar).filter(SystemPar.par_code=='import_neo4j_install_dir').one()
+    db_session.close()
+
+    #queue_uuid是queue的id，也是文件名
+
+    create_pub_time=datetime.datetime.now()
+    queue_uuid=str(uuid.uuid1())
+
+
+    u_body={'db_type':db_type,'db_address':db_address,'db_port':db_port,'db_name':db_name,'db_username':db_username,'db_password':db_password,'select_table':select_table,'column_items':column_items,'label_items':label_items,'node_edge':node_edge,'edge_type':edge_type}
+    print(edge_type)
+    queue=JobQueue(u_uuid=queue_uuid,u_declare_key='download_data',u_body=str(u_body),u_publisher_id='import_queue_upload',u_publish_datetime=create_pub_time,u_no_ack=False,u_start_datetime=None,u_complete_datetime=None,u_status='发布')
+    db_session=create_session()
+    db_session.add(queue)
+    db_session.commit()
+    db_session.close()
+    #数据导入列表
+    import_uuid=str(uuid.uuid1())
+    import_data=ImportData(u_uuid=import_uuid,u_create_datetime=create_pub_time,u_queue_uuid=queue_uuid,u_start_download_datetime=None,u_end_download_datetime=None,u_start_import_datetime=None,u_end_import_datetime=None,u_node_edge=node_edge,u_label_items=label_items,u_edge_type=edge_type,u_column_items=column_items,u_status='创建任务')
+    db_session=create_session()
+    db_session.add(import_data)
+    db_session.commit()
+    db_session.close()
+
+    
+    return jsonify({'status':'success'})
+
+
+
+'''
 @app.route('/nodes_upload/',methods=['POST'])
 def nodes_upload():
     f = request.files['file']
@@ -177,7 +243,7 @@ def edges_upload():
     app.quit()
     
     return jsonify({'status':'success'})
-
+'''
 @app.route('/neo4jdata/')
 def neo4j_data():
     if  'neo4jgraph_cypher' in request.args:
@@ -257,6 +323,68 @@ def get_top_row_cells():
     #print(jsonify(cols))
     database.closeConnection()
     return jsonify(cells)
+
+
+
+@app.route('/import_data/')
+def import_data():
+    empty=[]
+    if not request.args:
+        db_session=create_session()
+        posts=db_session.query(ImportData).filter(ImportData.u_status!='已删除').all()
+        for post in posts:
+            empty.append(post.to_json())
+        db_session.close()
+        return jsonify(empty)
+    else:
+        db_session=create_session()
+        posts=db_session.query(ImportData).filter(ImportData.u_status!='已删除').all()
+        for post in posts:
+            empty.append(post.to_json())
+        db_session.close()
+        return  jsonify(empty)
+
+
+@app.route('/import_data/<uuid>', methods=['PUT'])
+def update_import_data(uuid):
+    if len(uuid) == 0:
+        abort(404)
+    if not request.json:
+        abort(400)
+    request.get_json(silent=True)
+    u_status=request.json['u_status']
+    db_session=create_session()
+    
+    import_data=db_session.query(ImportData).filter(ImportData.u_uuid==uuid).one()
+    import_data.u_status=u_status
+    #删除文件
+    db_import_neo4j_install_dir=db_session.query(SystemPar).filter(SystemPar.par_code=='import_neo4j_install_dir').one()
+    import_neo4j_install_dir=db_import_neo4j_install_dir.par_value
+    file_path=import_neo4j_install_dir+"import/"+import_data.u_queue_uuid
+    print(file_path)
+    print(os.path.exists(file_path))
+    if os.path.exists(file_path):
+        print("start reomve")
+        os.remove(file_path)
+    db_session.commit()
+    db_session.close()
+    
+    return jsonify({'result': True})
+
+
+
+@app.route('/import_data/<uuid>', methods=['DELETE'])
+def delete_import_data(uuid):
+    
+    if len(uuid) == 0:
+        abort(404)
+    db_session=create_session()
+    
+    post=db_session.query(ImportData).filter(ImportData.u_uuid==uuid).delete()
+    db_session.commit()
+    db_session.close()
+    return jsonify({'result': True})
+
 
 
 @app.route('/my_templates/<uuid>', methods=['DELETE'])
