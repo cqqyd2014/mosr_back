@@ -12,7 +12,6 @@ import uuid
 from python_common.common import Base64Uri
 import decimal
 import urllib
-
 from flask.json import JSONEncoder as _JSONEncoder
 class JSONEncoder(json.JSONEncoder):
     def default(self, obj):
