@@ -125,16 +125,18 @@ def buildNodes(nodeRecord):
         items={}
         name=""
         for item in nodeRecord.items():
+                
                 items[item[0]]=item[1]
-                if item[0]=="name":
+                print(item)
+                if item[0]=="显示名称":
                         name=item[1]
         #label为labels数组的多个形成的组合，用-连接
         label='-'.join(labels)
         
-        data = {"id": str(nodeRecord.id), "label":label,"labels": labels}
+        data = {"id": str(nodeRecord.id), "label":label,"labels": labels,'name':name}
         data.update(items)
         #data["classes"]=labels
-
+        #print(data)
         return {"data": data}
 
 def buildEdges(relationRecord):

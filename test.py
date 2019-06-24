@@ -495,23 +495,35 @@ def node_colors():
         return  jsonify(post.to_json())
 
 
-@app.route('/neo4j_catlog/',methods=['GET'])
-def neo4j_catlog():
+@app.route('/neo4j_catlog_properties/',methods=['GET'])
+def neo4j_catlog_properties():
     empty=[]
-    if not request.args:
-        db_session=create_session()
-        posts=db_session.query(Neno4jCatalog).all()
-        for post in posts:
-            empty.append(post.to_json())
-        db_session.close()
-        return jsonify(empty)
-    else:
-        db_session=create_session()
-        posts=db_session.query(Neno4jCatalog).filter(Neno4jCatalog.nc_type==request.args['nc_type']).all()
-        for post in posts:
-            empty.append(post.to_json())
-        db_session.close()
-        return  jsonify(empty)
+    db_session=create_session()
+    posts=db_session.query(CurrentProperties).all()
+    for post in posts:
+        empty.append(post.to_json())
+    db_session.close()
+    return  jsonify(empty)
+
+@app.route('/neo4j_catlog_edgetypes/',methods=['GET'])
+def neo4j_catlog_edgetypes():
+    empty=[]
+    db_session=create_session()
+    posts=db_session.query(CurrentEdgeTyps).all()
+    for post in posts:
+        empty.append(post.to_json())
+    db_session.close()
+    return  jsonify(empty)
+
+@app.route('/neo4j_catlog_nodelabels/',methods=['GET'])
+def neo4j_catlog_nodelabels():
+    empty=[]
+    db_session=create_session()
+    posts=db_session.query(CurrentNodeLabels).all()
+    for post in posts:
+        empty.append(post.to_json())
+    db_session.close()
+    return  jsonify(empty)
 
 
 @app.route('/neo4j_catlog/',methods=['POST'])
@@ -722,7 +734,7 @@ def neo4j_rebuild(manage_import_data,import_data):
                 while(flag<len(array_cols)):
                     col_item=[]
                     col_item.append(u_ndoe_edge)
-                    col_item.append(u_label_items if u_ndoe_edge=='node' else u_edge_type)
+                    col_item.append(str(u_label_items) if u_ndoe_edge=='node' else u_edge_type)
                     col_item.append(array_cols[flag])
                     flag+=1
                     #col_item.append(array_cols[flag])
