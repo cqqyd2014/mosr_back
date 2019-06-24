@@ -1,8 +1,8 @@
 from flask import Flask, request, session, g, redirect, url_for, \
-     abort, render_template, flash,jsonify
+     abort, render_template, flash,jsonify,current_app
 import json
 from flask_cors import CORS
-from mosr_back_orm.orm import create_session,SystemPar,init_db,SystemCode,ProcessDetail,SystemData,QueryTemplate,Neno4jCatalog,JobQueue,ImportData
+from mosr_back_orm.orm import create_session,SystemPar,init_db,SystemCode,ProcessDetail,SystemData,QueryTemplate,Neno4jCatalog,JobQueue,ImportData,CurrentNodeLabels,CurrentEdgeTyps,CurrentProperties
 from restful import TableRestful
 import os
 from neo4j import GraphDatabase
@@ -12,7 +12,11 @@ import uuid
 from python_common.common import Base64Uri
 import decimal
 import urllib
+import platform
+import subprocess
+import _thread
 from flask.json import JSONEncoder as _JSONEncoder
+import time
 class JSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, decimal.Decimal):  # for decimal
@@ -27,11 +31,20 @@ import sys
 sys.path.append("python_common")
 sys.path.append("mosr_back_orm")
 from python_common.database_common import Database
-
+from flask_socketio import SocketIO,emit
 
 app=Flask(__name__)
+app.config['SECRET_KEY'] = 'S'
 app.json_encoder = JSONEncoder
 CORS(app, resources=r'/*')
+socketio = SocketIO(app)
+from threading import Lock
+thread = None
+thread_lock = Lock()
+
+#socketio.init_app(app)
+#name_space ='/neo4j_rebuild'
+'''
 temp_dir="d:/temp/"
 
 system_default_dir="D:/software/neo4j-community-3.5.3/"
@@ -42,6 +55,15 @@ def system_status():
     res_list = win32file.GetDiskFreeSpace(system_default_dir)
     disk_free_space = res_list[0]*res_list[1]*res_list[2]/(1024*1024.0)
     return jsonify({'free_space':disk_free_space,'system_default_dir':system_default_dir})
+'''
+
+#去除空格和逗号
+def _blankAndoComma(_str):
+    _str=_str.replace(' ','')
+    _str=_str.replace(',','_')
+    return _str
+
+
 
 @app.route('/')
 def show_entries():
@@ -625,8 +647,238 @@ def get_system_data():
 
 
 
+@socketio.on('neo4j_rebuild')
+def neo4j_rebuild(manage_import_data,import_data):
+    
+    socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_start", 'message_info':'系统开始重建分析数据库，业务将暂时中止，需等待数据库重建完成'})
+    
+    
+    #emit('neo4j_rebuild_start', {'message': '系统开始重建分析数据库，业务将暂时中止，需等待数据库重建完成'}, broadcast=True)
+    #print(manage_import_data)
+    #print(import_data)
+    #print(len(manage_import_data))
+    #如果两个列表的数量不一致，不能重建
+    if len(manage_import_data)!=len(import_data):
+        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_end", 'messsage_info':'重建未成功'})
+        #emit('neo4j_rebuild_end', {'message': '重建未成功'}, broadcast=True)
+    else:
+        system_type=''
+        if platform.platform().find('Windows')>=0:
+            system_type='Windows'
+        else:
+            system_type='UNIX'
+        import_command=''
+        db_session=create_session()
+        import_neo4j_install_dir=db_session.query(SystemPar).filter(SystemPar.par_code=='import_neo4j_install_dir').one()
+        import_command+=import_neo4j_install_dir.par_value+'bin/'+('neo4j-admin.bat' if system_type=='Windows' else 'neo4j-admin')+' import'
+        #print(import_command)
+        #节点数量和关系数量
+        node_count=0
+        edge_count=0
+        node_labels=[]#第一个字段是输入的lables，可能两个值，后面一个字段是明细
+        edge_types=[]
+        properties=[]#第一个字段是类型，第二个字段是输入的lables或者type，第三个字段是名称，第四个字段是类型
+        start_import_time=datetime.datetime.now()
+        for index in range(len(manage_import_data)):
+            if manage_import_data[index]:
+                item=import_data[index]
+                #跟新数据库中的开始导入时间
+                u_uuid=item['u_uuid']
+                print(u_uuid)
+                import_data_db=db_session.query(ImportData).filter(ImportData.u_uuid==u_uuid).one()
+                import_data_db.u_start_import_datetime=start_import_time
+                #数据文件信息
+                u_queue_uuid=item['u_queue_uuid']
+                u_ndoe_edge=item['u_node_edge']
+                u_queue_uuid=item['u_queue_uuid']
+                u_label_items=''
+                u_edge_type=''
+                if u_ndoe_edge=='node':
+                    #node
+                    u_label_items=item['u_label_items'].split(',')
+                    labels=''
+                    for label in u_label_items:
+                        labels+=':'+label
+                        if [u_label_items,label] not in node_labels:
+                            node_labels.append([u_label_items,label])
+                    import_command+=' --nodes'+labels+'='+import_neo4j_install_dir.par_value+'import/'+u_queue_uuid
+                    node_count+=import_data_db.u_rowcount
+                    
+
+                else:
+                    #edge
+                    u_edge_type=item['u_edge_type']
+                    if u_edge_type not in edge_types:
+                        edge_types.append(u_edge_type)
+                    import_command+=' --relationships:'+u_edge_type+'='+import_neo4j_install_dir.par_value+'import/'+u_queue_uuid
+                    edge_count+=import_data_db.u_rowcount
+                #处理属性
+                u_column_items=item['u_column_items']
+                #print(u_column_items)
+                #解析u_column_items为数组
+                array_cols=u_column_items.split(',')
+               
+                flag=0
+                while(flag<len(array_cols)):
+                    col_item=[]
+                    col_item.append(u_ndoe_edge)
+                    col_item.append(u_label_items if u_ndoe_edge=='node' else u_edge_type)
+                    col_item.append(array_cols[flag])
+                    flag+=1
+                    #col_item.append(array_cols[flag])
+                    flag+=1
+                    col_item.append(array_cols[flag])
+                    flag+=1
+                    properties.append(col_item)
+                    #print(col_item)
+                
+                
+                
+                
+
+
+        db_session.commit()
+        import_command+=' --ignore-extra-columns=true  --ignore-missing-nodes=true --ignore-duplicate-nodes=true'
+        
+        #停止Neo4j
+        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'开始停止分析服务器'})
+        #emit('neo4j_rebuild_process', {'message': '开始停止分析服务器'}, broadcast=True)
+        stop_commonad=import_neo4j_install_dir.par_value+('bin/neo4j.bat' if system_type=='Windows' else 'neo4j')+' stop'
+        print(stop_commonad)
+        r_stop_commonad = subprocess.call(stop_commonad)
+        print(r_stop_commonad)
+        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'分析服务器成功停止'})
+        #emit('neo4j_rebuild_process', {'message': '分析服务器成功停止'}, broadcast=True)
+        #删除原数据库
+        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'开始清理服务器数据'})
+        #emit('neo4j_rebuild_process', {'message': '开始清理服务器数据'}, broadcast=True)
+        if system_type=='Windows':
+            windows_path=import_neo4j_install_dir.par_value.replace("/", "\\")
+            if os.path.exists(windows_path+'data\\databases\\graph.db\\index'):
+                del_db_command='del /q '+windows_path+'data\\databases\\graph.db\\index'
+                print(del_db_command)
+                r_del_db_command = os.popen(del_db_command).read()
+                print(r_del_db_command)
+            if os.path.exists(windows_path+'data\\databases\\graph.db\\profiles'):
+                del_db_command='del /q '+windows_path+'data\\databases\\graph.db\\profiles'
+                print(del_db_command)
+                r_del_db_command = os.popen(del_db_command).read()
+                print(r_del_db_command)
+            if os.path.exists(windows_path+'data\\databases\\graph.db'):
+                del_db_command='del /q '+windows_path+'data\\databases\\graph.db'
+                print(del_db_command)
+                r_del_db_command = os.popen(del_db_command).read()
+                print(r_del_db_command)
+            if os.path.exists(windows_path+'data\\databases\\graph.db\\index'):
+                del_db_command='rd '+windows_path+'data\\databases\\graph.db\\index'
+                print(del_db_command)
+                r_del_db_command = os.popen(del_db_command).read()
+                print(r_del_db_command)
+            if os.path.exists(windows_path+'data\\databases\\graph.db\\profiles'):
+                del_db_command='rd '+windows_path+'data\\databases\\graph.db\\profiles'
+                print(del_db_command)
+                r_del_db_command = os.popen(del_db_command).read()
+                print(r_del_db_command)
+            if os.path.exists(windows_path+'data\\databases\\graph.db'):
+                del_db_command='rd '+windows_path+'data\\databases\\graph.db'
+                print(del_db_command)
+                r_del_db_command = os.popen(del_db_command).read()
+                print(r_del_db_command)
+        else:
+            del_db_command='rm -Rf '+import_neo4j_install_dir.par_value+'data/databases/graph.db'
+            print(del_db_command)
+            r_del_db_command = os.popen(del_db_command).read()
+            print(r_del_db_command)
+        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'服务器数据成功清理'})
+        #emit('neo4j_rebuild_process', {'message': '服务器数据成功清理'}, broadcast=True)
+        #导入数据库
+        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'开始导入数据并重建分析数据库，请等待'})
+        #emit('neo4j_rebuild_process', {'message': '开始导入数据并重建分析数据库，请等待'}, broadcast=True)
+        print(import_command)
+        r_import_command= subprocess.call(import_command)
+        
+        print(r_import_command)
+        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':r_import_command})
+        #emit('neo4j_rebuild_process', {'message': r_import_command}, broadcast=True)
+        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'导入数据成功'})
+        #emit('neo4j_rebuild_process', {'message': '导入数据成功'}, broadcast=True)
+        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'开始启动分析服务器'})
+        #emit('neo4j_rebuild_process', {'message': '开始启动分析服务器'}, broadcast=True)
+        
+        #启动数据库
+        start_commonad=import_neo4j_install_dir.par_value+('bin/neo4j.bat' if system_type=='Windows' else 'neo4j')+' start'
+        print(start_commonad)
+        r_start_commonad = subprocess.call(start_commonad)
+        print(r_stop_commonad)
+        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'分析服务器启动成功'})
+        #emit('neo4j_rebuild_process', {'message': '分析服务器启动成功'}, broadcast=True)
+        #socketio.sleep(5)
+
+
+        
+        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_end", 'message_info':'分析数据库重建完成'})
+        #emit('neo4j_rebuild_end', {'message': '分析数据库重建完成'}, broadcast=True)
+        #跟新数据库数据
+        end_import_time=datetime.datetime.now()
+        for index in range(len(manage_import_data)):
+            if manage_import_data[index]:
+                item=import_data[index]
+                
+                
+                u_uuid=item['u_uuid']
+                import_data_db=db_session.query(ImportData).filter(ImportData.u_uuid==u_uuid).one()
+                import_data_db.u_end_import_datetime=end_import_time
+        #更新节点数量和关系数量
+        node_count_db=db_session.query(SystemPar).filter(SystemPar.par_code=='node_count').one()
+        node_count_db.par_value=str(node_count)
+        edge_count_db=db_session.query(SystemPar).filter(SystemPar.par_code=='edge_count').one()
+        edge_count_db.par_value=str(edge_count)
+        db_session.commit()
+
+        #更新数据库中现有的节点、关系和属性
+        CurrentNodeLabels.delete_all(db_session)
+        db_session.flush()
+        for node_label in node_labels:
+
+            currentNodeLabels=CurrentNodeLabels(labels=str(node_label[0]),label=node_label[1],create_datetime=end_import_time)
+
+            db_session.add(currentNodeLabels)
+
+        db_session.flush()
+        CurrentEdgeTyps.delete_all(db_session)
+        db_session.flush()
+        for edge_type in edge_types:
+            currentEdgeTyps=CurrentEdgeTyps(edge_type=edge_type,create_datetime=end_import_time)
+            db_session.add(currentEdgeTyps)
+        
+        db_session.flush()
+        CurrentProperties.delete_all(db_session)
+        db_session.flush()
+        for _property in properties:
+            currentProperties=CurrentProperties(u_uuid=str(uuid.uuid1()),u_type=_property[0],u_label_type=_property[1],u_column_name=_property[2],u_column_type=_property[3],create_datetime=end_import_time)
+            db_session.add(currentProperties)
+        db_session.commit()
+        db_session.close()
+
+        
+
+def long_time_process(messsage):
+    
+    #print(messsage['message_type'])
+    socketio.emit(messsage['message_type'], messsage['message_info'], broadcast=True)
+    
+
+@socketio.on('connect')
+def test_connect():
+    print('Client connected')
+
+@socketio.on('disconnect')
+def test_disconnect():
+    print('Client disconnected')
 
 
 if __name__=='__main__':  
-    app.debug = True
-    app.run(host='0.0.0.0')
+    #app.debug = True
+    #app.run(host='0.0.0.0')
+
+    socketio.run(app,debug=True,host='0.0.0.0',port=5000)
