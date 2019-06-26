@@ -465,6 +465,7 @@ def new_system_par():
 
 @app.route('/SystemPar/',methods=['GET'])
 def get_posts():
+    empty=[]
     if not request.args:
         db_session=create_session()
         posts=db_session.query(SystemPar).all()
@@ -755,9 +756,9 @@ def neo4j_rebuild(manage_import_data,import_data):
         #停止Neo4j
         socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'开始停止分析服务器'})
         #emit('neo4j_rebuild_process', {'message': '开始停止分析服务器'}, broadcast=True)
-        stop_commonad=import_neo4j_install_dir.par_value+('bin/neo4j.bat' if system_type=='Windows' else 'neo4j')+' stop'
+        stop_commonad=import_neo4j_install_dir.par_value+('bin/neo4j.bat' if system_type=='Windows' else 'bin/neo4j')+' stop'
         print(stop_commonad)
-        r_stop_commonad = subprocess.call(stop_commonad)
+        r_stop_commonad = os.popen(stop_commonad).read()#subprocess.call(stop_commonad)
         print(r_stop_commonad)
         socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'分析服务器成功停止'})
         #emit('neo4j_rebuild_process', {'message': '分析服务器成功停止'}, broadcast=True)
@@ -807,7 +808,7 @@ def neo4j_rebuild(manage_import_data,import_data):
         socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'开始导入数据并重建分析数据库，请等待'})
         #emit('neo4j_rebuild_process', {'message': '开始导入数据并重建分析数据库，请等待'}, broadcast=True)
         print(import_command)
-        r_import_command= subprocess.call(import_command)
+        r_import_command= os.popen(import_command).read()#subprocess.call(import_command)
         
         print(r_import_command)
         socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':r_import_command})
@@ -818,9 +819,9 @@ def neo4j_rebuild(manage_import_data,import_data):
         #emit('neo4j_rebuild_process', {'message': '开始启动分析服务器'}, broadcast=True)
         
         #启动数据库
-        start_commonad=import_neo4j_install_dir.par_value+('bin/neo4j.bat' if system_type=='Windows' else 'neo4j')+' start'
+        start_commonad=import_neo4j_install_dir.par_value+('bin/neo4j.bat' if system_type=='Windows' else 'bin/neo4j')+' start'
         print(start_commonad)
-        r_start_commonad = subprocess.call(start_commonad)
+        r_start_commonad = os.popen(start_commonad).read()#subprocess.call(start_commonad)
         print(r_stop_commonad)
         socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'分析服务器启动成功'})
         #emit('neo4j_rebuild_process', {'message': '分析服务器启动成功'}, broadcast=True)
