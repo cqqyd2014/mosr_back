@@ -844,11 +844,13 @@ def neo4j_import(par_dict):
     socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'分析服务器启动成功'})
         #emit('neo4j_rebuild_process', {'message': '分析服务器启动成功'}, broadcast=True)
         #socketio.sleep(5)
+    print("分析服务器启动成功")
 
 
         
     socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_end", 'message_info':'分析数据库重建完成'})
         #emit('neo4j_rebuild_end', {'message': '分析数据库重建完成'}, broadcast=True)
+    print("重建数据库完成")
     db_session=create_session()
         #跟新数据库数据
     end_import_time=datetime.datetime.now()
@@ -910,4 +912,4 @@ if __name__=='__main__':
     #app.debug = True
     #app.run(host='0.0.0.0')
 
-    socketio.run(app,debug=False,host='0.0.0.0',port=5000)
+    socketio.run(app,debug=True,host='0.0.0.0',port=5000)
