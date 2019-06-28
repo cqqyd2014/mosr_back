@@ -17,6 +17,8 @@ import subprocess
 import _thread
 from flask.json import JSONEncoder as _JSONEncoder
 import time
+from eventlet.green import threading
+import psutil
 
 class JSONEncoder(json.JSONEncoder):
 
@@ -824,6 +826,9 @@ def long_time_process(messsage):
     socketio.emit(messsage['message_type'], messsage['message_info'], broadcast=True)
 
 def neo4j_import(par_dict):
+    t = threading.Thread(target=system_report, name='system_report')
+    t.setDaemon(True)
+    t.start()
     
     system_type=par_dict['system_type']
     socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':par_dict['import_command']})
@@ -897,7 +902,11 @@ def neo4j_import(par_dict):
     db_session.commit()
     db_session.close()
 
-    
+def system_report():
+    while True:
+        with app.app_context():
+            socketio.emit('system_report',psutil.cpu_times(), broadcast=True)
+        socketio.sleep(5)
 
 @socketio.on('connect')
 def test_connect():
