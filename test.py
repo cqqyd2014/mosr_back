@@ -353,10 +353,12 @@ def get_top_row_cells():
 
 @app.route('/import_data/')
 def import_data():
+    print("import_get...............................")
     empty=[]
     if not request.args:
         db_session=create_session()
         posts=db_session.query(ImportData).filter(ImportData.u_status!='已删除').all()
+        print("import中国")
         for post in posts:
             empty.append(post.to_json())
         db_session.close()
@@ -688,6 +690,7 @@ def neo4j_rebuild(manage_import_data,import_data):
         db_session=create_session()
         import_neo4j_install_dir=db_session.query(SystemPar).filter(SystemPar.par_code=='import_neo4j_install_dir').one()
         import_command+=import_neo4j_install_dir.par_value+'bin/'+('neo4j-admin.bat' if system_type=='Windows' else 'neo4j-admin')+' import'
+        import_command+=' --mode csv --database graph.db '
         #print(import_command)
         #节点数量和关系数量
         node_count=0
@@ -826,10 +829,8 @@ def long_time_process(messsage):
     socketio.emit(messsage['message_type'], messsage['message_info'], broadcast=True)
 
 def neo4j_import(par_dict):
-    t = threading.Thread(target=system_report, name='system_report')
-    t.setDaemon(True)
-    t.start()
     
+    print(par_dict['import_command'])
     system_type=par_dict['system_type']
     socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':par_dict['import_command']})
     r_import_command= os.popen(par_dict['import_command']).read()#subprocess.call(import_command)
@@ -901,20 +902,40 @@ def neo4j_import(par_dict):
         db_session.add(currentProperties)
     db_session.commit()
     db_session.close()
+'''
+def background_thread():
+    """Example of how to send server generated events to clients."""
+    count = 0
+    while True:
+        if background_thread_flag:
+            socketio.sleep(10)
+            count += 1
+            socketio.emit('system_report',psutil.cpu_times(), broadcast=True)
+            print(count)
+        else:
+            break
+        
 
 def system_report():
     while True:
         with app.app_context():
             socketio.emit('system_report',psutil.cpu_times(), broadcast=True)
+            print("context")
         socketio.sleep(5)
+        print("sleep")
+'''
+background_thread_flag=True
 
 @socketio.on('connect')
 def test_connect():
     print('Client connected')
+    background_thread_flag=True
+    #socketio.start_background_task(target=background_thread)
 
 @socketio.on('disconnect')
 def test_disconnect():
     print('Client disconnected')
+    background_thread_flag=False
 
 
 if __name__=='__main__':  
