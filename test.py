@@ -751,10 +751,6 @@ def neo4j_rebuild(manage_import_data,import_data):
                     flag+=1
                     properties.append(col_item)
                     #print(col_item)
-                
-                
-                
-                
 
 
         db_session.commit()
@@ -815,7 +811,82 @@ def neo4j_rebuild(manage_import_data,import_data):
         socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'开始导入数据并重建分析数据库，请等待'})
         #emit('neo4j_rebuild_process', {'message': '开始导入数据并重建分析数据库，请等待'}, broadcast=True)
         
-        socketio.start_background_task(neo4j_import,{'import_command':import_command,'system_type':system_type,'properties':properties,'edge_types':edge_types,'node_labels':node_labels,'edge_count':edge_count,'node_count':node_count,'neo4j_import':neo4j_import, 'import_neo4j_install_dir':import_neo4j_install_dir.par_value,'manage_import_data':manage_import_data,'import_data':import_data})
+        #socketio.start_background_task(neo4j_import,{'import_command':import_command,'system_type':system_type,'properties':properties,'edge_types':edge_types,'node_labels':node_labels,'edge_count':edge_count,'node_count':node_count,'neo4j_import':neo4j_import, 'import_neo4j_install_dir':import_neo4j_install_dir.par_value,'manage_import_data':manage_import_data,'import_data':import_data})
+
+        #发送任务到queue
+        import_queue_uuid=str(uuid.uuid1())
+        import_queue=JobQueue(u_uuid=import_queue_uuid,u_declare_key='import_data',u_body=import_command,u_publisher_id='import_data',u_publish_datetime=start_import_time,u_no_ack=False,u_start_datetime=None,u_complete_datetime=None,u_status='发布')
+        db_session.add(import_queue)
+        db_session.commit()
+        #循环检测状态看是否导入成功
+        import_queue_reload=db_session.query(JobQueue).filter(JobQueue.u_uuid==import_queue_uuid).one()
+        while import_queue_reload.u_complete_datetime==None:
+            socketio.sleep(10)
+            mem=psutil.virtual_memory()
+            socketio.emit('system_report',{'cpu_percent':psutil.cpu_percent(),'mem_total':mem.total,'mem_used':mem.used,'mem_free':mem.free}, broadcast=True)
+            import_queue_reload=db_session.query(JobQueue).filter(JobQueue.u_uuid==import_queue_uuid).one()
+
+        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'导入数据成功'})
+        #emit('neo4j_rebuild_process', {'message': '导入数据成功'}, broadcast=True)
+        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'开始启动分析服务器'})
+        #emit('neo4j_rebuild_process', {'message': '开始启动分析服务器'}, broadcast=True)
+        
+        #启动数据库
+        start_commonad=import_neo4j_install_dir.par_value+('bin/neo4j.bat' if system_type=='Windows' else 'bin/neo4j')+' start'
+        print(start_commonad)
+        r_start_commonad = os.popen(start_commonad).read()#subprocess.call(start_commonad)
+
+        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'分析服务器启动成功'})
+        #emit('neo4j_rebuild_process', {'message': '分析服务器启动成功'}, broadcast=True)
+        #socketio.sleep(5)
+        print("分析服务器启动成功")
+
+        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_end", 'message_info':'分析数据库重建完成'})
+        #emit('neo4j_rebuild_end', {'message': '分析数据库重建完成'}, broadcast=True)
+        print("重建数据库完成")
+        
+        #跟新数据库数据
+        end_import_time=datetime.datetime.now()
+        #manage_import_data=par_dict['manage_import_data']
+        #import_data=par_dict['import_data']
+        for index in range(len(manage_import_data)):
+            if manage_import_data[index]:
+                item=import_data[index]
+                u_uuid=item['u_uuid']
+                import_data_db=db_session.query(ImportData).filter(ImportData.u_uuid==u_uuid).one()
+                import_data_db.u_end_import_datetime=end_import_time
+            #更新节点数量和关系数量
+        node_count_db=db_session.query(SystemPar).filter(SystemPar.par_code=='node_count').one()
+        #node_count=par_dict['node_count']
+        node_count_db.par_value=str(node_count)
+        edge_count_db=db_session.query(SystemPar).filter(SystemPar.par_code=='edge_count').one()
+        #edge_count=par_dict['edge_count']
+        edge_count_db.par_value=str(edge_count)
+        db_session.flush()
+
+            #更新数据库中现有的节点、关系和属性
+        CurrentNodeLabels.delete_all(db_session)
+        db_session.flush()
+        #node_labels=par_dict['node_labels']
+        for node_label in node_labels:
+
+            currentNodeLabels=CurrentNodeLabels(labels=str(node_label[0]),label=node_label[1],create_datetime=end_import_time)
+            db_session.add(currentNodeLabels)
+        db_session.flush()
+        CurrentEdgeTyps.delete_all(db_session)
+        db_session.flush()
+        #edge_types=par_dict['edge_types']
+        for edge_type in edge_types:
+            currentEdgeTyps=CurrentEdgeTyps(edge_type=edge_type,create_datetime=end_import_time)
+            db_session.add(currentEdgeTyps)
+            
+        db_session.flush()
+        CurrentProperties.delete_all(db_session)
+        db_session.flush()
+        #properties=par_dict['properties']
+        for _property in properties:
+            currentProperties=CurrentProperties(u_uuid=str(uuid.uuid1()),u_type=_property[0],u_label_type=_property[1],u_column_name=_property[2],u_column_type=_property[3],create_datetime=end_import_time)
+            db_session.add(currentProperties)
 
 
         db_session.commit()
@@ -827,16 +898,35 @@ def long_time_process(messsage):
     
     #print(messsage['message_type'])
     socketio.emit(messsage['message_type'], messsage['message_info'], broadcast=True)
-
+background_importing_thread_flag=True
 def neo4j_import(par_dict):
+
+    background_importing_thread_flag=True
+    socketio.start_background_task(wait_for_import_end,par_dict)
     
     print(par_dict['import_command'])
     system_type=par_dict['system_type']
     socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':par_dict['import_command']})
     r_import_command= os.popen(par_dict['import_command']).read()#subprocess.call(import_command)
-        
+    background_importing_thread_flag=False
     
         #emit('neo4j_rebuild_process', {'message': r_import_command}, broadcast=True)
+    
+
+def wait_for_import_end(par_dict):
+    """Example of how to send server generated events to clients."""
+    count = 0
+    while True:
+        print("okokokoko")
+        if background_importing_thread_flag:
+            socketio.sleep(10)
+            count += 1
+            socketio.emit('system_report',psutil.cpu_times(), broadcast=True)
+            print('background_thread_importing')
+            print(count)
+        else:
+            print("background_thread_imported")
+            break
     socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'导入数据成功'})
         #emit('neo4j_rebuild_process', {'message': '导入数据成功'}, broadcast=True)
     socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'开始启动分析服务器'})
@@ -852,8 +942,6 @@ def neo4j_import(par_dict):
         #socketio.sleep(5)
     print("分析服务器启动成功")
 
-
-        
     socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_end", 'message_info':'分析数据库重建完成'})
         #emit('neo4j_rebuild_end', {'message': '分析数据库重建完成'}, broadcast=True)
     print("重建数据库完成")
@@ -902,40 +990,24 @@ def neo4j_import(par_dict):
         db_session.add(currentProperties)
     db_session.commit()
     db_session.close()
-'''
-def background_thread():
-    """Example of how to send server generated events to clients."""
-    count = 0
-    while True:
-        if background_thread_flag:
-            socketio.sleep(10)
-            count += 1
-            socketio.emit('system_report',psutil.cpu_times(), broadcast=True)
-            print(count)
-        else:
-            break
         
 
-def system_report():
-    while True:
-        with app.app_context():
-            socketio.emit('system_report',psutil.cpu_times(), broadcast=True)
-            print("context")
-        socketio.sleep(5)
-        print("sleep")
-'''
-background_thread_flag=True
+
+
+
 
 @socketio.on('connect')
 def test_connect():
-    print('Client connected')
-    background_thread_flag=True
+    sid = request.sid
+    print('Client connected'+sid)
+
+    
     #socketio.start_background_task(target=background_thread)
 
 @socketio.on('disconnect')
 def test_disconnect():
     print('Client disconnected')
-    background_thread_flag=False
+
 
 
 if __name__=='__main__':  
