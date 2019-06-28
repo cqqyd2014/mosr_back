@@ -763,7 +763,7 @@ def neo4j_rebuild(manage_import_data,import_data):
         print(stop_commonad)
         r_stop_commonad = os.popen(stop_commonad).read()#subprocess.call(stop_commonad)
         print(r_stop_commonad)
-        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'分析服务器成功停止'})
+        #socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'分析服务器成功停止'})
         #emit('neo4j_rebuild_process', {'message': '分析服务器成功停止'}, broadcast=True)
         #删除原数据库
         socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'开始清理服务器数据'})
@@ -805,7 +805,7 @@ def neo4j_rebuild(manage_import_data,import_data):
             print(del_db_command)
             r_del_db_command = os.popen(del_db_command).read()
             print(r_del_db_command)
-        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'服务器数据成功清理'})
+        #socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'服务器数据成功清理'})
         #emit('neo4j_rebuild_process', {'message': '服务器数据成功清理'}, broadcast=True)
         #导入数据库
         socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'开始导入数据并重建分析数据库，请等待'})
@@ -817,14 +817,28 @@ def neo4j_rebuild(manage_import_data,import_data):
         import_queue_uuid=str(uuid.uuid1())
         import_queue=JobQueue(u_uuid=import_queue_uuid,u_declare_key='import_data',u_body=import_command,u_publisher_id='import_data',u_publish_datetime=start_import_time,u_no_ack=False,u_start_datetime=None,u_complete_datetime=None,u_status='发布')
         db_session.add(import_queue)
+        db_session.flush()
         db_session.commit()
+
         #循环检测状态看是否导入成功
-        import_queue_reload=db_session.query(JobQueue).filter(JobQueue.u_uuid==import_queue_uuid).one()
-        while import_queue_reload.u_complete_datetime==None:
+        db_session_check=create_session()
+        import_queue_reload_init=db_session_check.query(JobQueue).filter(JobQueue.u_uuid==import_queue_uuid).one()
+        u_complete_datetime=import_queue_reload_init.u_complete_datetime
+        db_session_check.close()
+        while u_complete_datetime==None:
             socketio.sleep(10)
             mem=psutil.virtual_memory()
-            socketio.emit('system_report',{'cpu_percent':psutil.cpu_percent(),'mem_total':mem.total,'mem_used':mem.used,'mem_free':mem.free}, broadcast=True)
+            disk=psutil.disk_usage(import_neo4j_install_dir.par_value)
+            
+            socketio.emit('system_report',{'platform':platform.platform(),'disk_total':disk.total,'disk_free':disk.free,'cpu_percent':psutil.cpu_percent(),'mem_total':mem.total,'mem_used':mem.used,'mem_free':mem.free}, broadcast=True)
+            db_session_check=create_session()
             import_queue_reload=db_session.query(JobQueue).filter(JobQueue.u_uuid==import_queue_uuid).one()
+            u_complete_datetime=import_queue_reload.u_complete_datetime
+            u_status=import_queue_reload.u_status
+            db_session_check.close()
+            print(import_queue_uuid)
+            print(u_status)
+            print(u_complete_datetime)
 
         socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'导入数据成功'})
         #emit('neo4j_rebuild_process', {'message': '导入数据成功'}, broadcast=True)
@@ -836,7 +850,7 @@ def neo4j_rebuild(manage_import_data,import_data):
         print(start_commonad)
         r_start_commonad = os.popen(start_commonad).read()#subprocess.call(start_commonad)
 
-        socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'分析服务器启动成功'})
+        #socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'分析服务器启动成功'})
         #emit('neo4j_rebuild_process', {'message': '分析服务器启动成功'}, broadcast=True)
         #socketio.sleep(5)
         print("分析服务器启动成功")
