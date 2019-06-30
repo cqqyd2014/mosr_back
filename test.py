@@ -690,7 +690,7 @@ def neo4j_rebuild(manage_import_data,import_data):
         db_session=create_session()
         import_neo4j_install_dir=db_session.query(SystemPar).filter(SystemPar.par_code=='import_neo4j_install_dir').one()
         import_command+=import_neo4j_install_dir.par_value+'bin/'+('neo4j-admin.bat' if system_type=='Windows' else 'neo4j-admin')+' import'
-        import_command+=' --mode csv --database graph.db '
+        #import_command+=' --mode csv --database graph.db '
         #print(import_command)
         #节点数量和关系数量
         node_count=0
@@ -754,7 +754,7 @@ def neo4j_rebuild(manage_import_data,import_data):
 
 
         db_session.commit()
-        import_command+=' --ignore-extra-columns=true  --ignore-missing-nodes=true --ignore-duplicate-nodes=true'
+        import_command+=' --ignore-extra-columns=true --ignore-missing-nodes=true --ignore-duplicate-nodes=true'
         
         #停止Neo4j
         socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'开始停止分析服务器'})
