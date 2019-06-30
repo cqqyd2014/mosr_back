@@ -1,6 +1,7 @@
 from flask import Flask, request, session, g, redirect, url_for, \
      abort, render_template, flash,jsonify,current_app
 import json
+from long_time_process import run as long_run
 from flask_cors import CORS
 from mosr_back_orm.orm import create_session,SystemPar,init_db,SystemCode,ProcessDetail,SystemData,QueryTemplate,Neno4jCatalog,JobQueue,ImportData,CurrentNodeLabels,CurrentEdgeTyps,CurrentProperties
 from restful import TableRestful
@@ -322,7 +323,6 @@ def get_cols():
     database=Database(db_type,db_address,db_port,db_name,db_username,db_password)
     database.getConnection()
     cols=database.getColumn(select_table)
-    #print("cols")
     #print(jsonify(cols))
     database.closeConnection()
     return jsonify(cols)
@@ -353,12 +353,12 @@ def get_top_row_cells():
 
 @app.route('/import_data/')
 def import_data():
-    print("import_get...............................")
+    #print("import_get...............................")
     empty=[]
     if not request.args:
         db_session=create_session()
         posts=db_session.query(ImportData).filter(ImportData.u_status!='已删除').all()
-        print("import中国")
+        #print("import中国")
         for post in posts:
             empty.append(post.to_json())
         db_session.close()
@@ -704,7 +704,7 @@ def neo4j_rebuild(manage_import_data,import_data):
                 item=import_data[index]
                 #跟新数据库中的开始导入时间
                 u_uuid=item['u_uuid']
-                print(u_uuid)
+                #print(u_uuid)
                 import_data_db=db_session.query(ImportData).filter(ImportData.u_uuid==u_uuid).one()
                 import_data_db.u_start_import_datetime=start_import_time
                 #数据文件信息
@@ -768,43 +768,87 @@ def neo4j_rebuild(manage_import_data,import_data):
         #删除原数据库
         socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'开始清理服务器数据'})
         #emit('neo4j_rebuild_process', {'message': '开始清理服务器数据'}, broadcast=True)
-        if system_type=='Windows':
-            windows_path=import_neo4j_install_dir.par_value.replace("/", "\\")
-            if os.path.exists(windows_path+'data\\databases\\graph.db\\index'):
-                del_db_command='del /q '+windows_path+'data\\databases\\graph.db\\index'
+        
+        long_run(socketio,'clean_neo4j','')
+        '''
+        while True:
+            mem=psutil.virtual_memory()
+            disk=psutil.disk_usage(import_neo4j_install_dir.par_value)
+            socketio.emit('system_report',{'platform':platform.platform(),'disk_total':disk.total,'disk_free':disk.free,'cpu_percent':psutil.cpu_percent(),'mem_total':mem.total,'mem_used':mem.used,'mem_free':mem.free}, broadcast=True)
+            socketio.sleep(10)
+            if system_type=='Windows':
+                windows_path=import_neo4j_install_dir.par_value.replace("/", "\\")
+                if os.path.exists(windows_path+'data\\databases\\graph.db\\temp.db\\temp.db'):
+                    del_db_command='del /q '+windows_path+'data\\databases\\graph.db\\temp.db\\temp.db'
+                    print(del_db_command)
+                    r_del_db_command = os.popen(del_db_command).read()
+                    print(r_del_db_command)
+                if os.path.exists(windows_path+'data\\databases\\graph.db\\temp.db'):
+                    del_db_command='del /q '+windows_path+'data\\databases\\graph.db\\temp.db'
+                    print(del_db_command)
+                    r_del_db_command = os.popen(del_db_command).read()
+                    print(r_del_db_command)
+                if os.path.exists(windows_path+'data\\databases\\graph.db\\index'):
+                    del_db_command='del /q '+windows_path+'data\\databases\\graph.db\\index'
+                    print(del_db_command)
+                    r_del_db_command = os.popen(del_db_command).read()
+                    print(r_del_db_command)
+                if os.path.exists(windows_path+'data\\databases\\graph.db\\profiles'):
+                    del_db_command='del /q '+windows_path+'data\\databases\\graph.db\\profiles'
+                    print(del_db_command)
+                    r_del_db_command = os.popen(del_db_command).read()
+                    print(r_del_db_command)
+                if os.path.exists(windows_path+'data\\databases\\graph.db'):
+                    del_db_command='del /q '+windows_path+'data\\databases\\graph.db'
+                    print(del_db_command)
+                    r_del_db_command = os.popen(del_db_command).read()
+                    print(r_del_db_command)
+                #删除目录
+                if os.path.exists(windows_path+'data\\databases\\graph.db\\temp.db\\temp.db'):
+                    del_db_command='rd '+windows_path+'data\\databases\\graph.db\\temp.db\\temp.db'
+                    print(del_db_command)
+                    r_del_db_command = os.popen(del_db_command).read()
+                    print(r_del_db_command)
+                if os.path.exists(windows_path+'data\\databases\\graph.db\\temp.db'):
+                    del_db_command='rd '+windows_path+'data\\databases\\graph.db\\temp.db'
+                    print(del_db_command)
+                    r_del_db_command = os.popen(del_db_command).read()
+                    print(r_del_db_command)
+                if os.path.exists(windows_path+'data\\databases\\graph.db\\index'):
+                    del_db_command='rd '+windows_path+'data\\databases\\graph.db\\index'
+                    print(del_db_command)
+                    r_del_db_command = os.popen(del_db_command).read()
+                    print(r_del_db_command)
+                if os.path.exists(windows_path+'data\\databases\\graph.db\\profiles'):
+                    del_db_command='rd '+windows_path+'data\\databases\\graph.db\\profiles'
+                    print(del_db_command)
+                    r_del_db_command = os.popen(del_db_command).read()
+                    print(r_del_db_command)
+                if os.path.exists(windows_path+'data\\databases\\graph.db'):
+                    del_db_command='rd '+windows_path+'data\\databases\\graph.db'
+                    print(del_db_command)
+                    r_del_db_command = os.popen(del_db_command).read()
+                    print(r_del_db_command)
+                #测试是否删掉
+                if os.path.exists(windows_path+'data\\databases\\graph.db'):
+                    #数据库并未停止继续删除
+                    pass
+                else:
+                    break
+
+            else:
+                del_db_command='rm -Rf '+import_neo4j_install_dir.par_value+'data/databases/graph.db'
                 print(del_db_command)
                 r_del_db_command = os.popen(del_db_command).read()
                 print(r_del_db_command)
-            if os.path.exists(windows_path+'data\\databases\\graph.db\\profiles'):
-                del_db_command='del /q '+windows_path+'data\\databases\\graph.db\\profiles'
-                print(del_db_command)
-                r_del_db_command = os.popen(del_db_command).read()
-                print(r_del_db_command)
-            if os.path.exists(windows_path+'data\\databases\\graph.db'):
-                del_db_command='del /q '+windows_path+'data\\databases\\graph.db'
-                print(del_db_command)
-                r_del_db_command = os.popen(del_db_command).read()
-                print(r_del_db_command)
-            if os.path.exists(windows_path+'data\\databases\\graph.db\\index'):
-                del_db_command='rd '+windows_path+'data\\databases\\graph.db\\index'
-                print(del_db_command)
-                r_del_db_command = os.popen(del_db_command).read()
-                print(r_del_db_command)
-            if os.path.exists(windows_path+'data\\databases\\graph.db\\profiles'):
-                del_db_command='rd '+windows_path+'data\\databases\\graph.db\\profiles'
-                print(del_db_command)
-                r_del_db_command = os.popen(del_db_command).read()
-                print(r_del_db_command)
-            if os.path.exists(windows_path+'data\\databases\\graph.db'):
-                del_db_command='rd '+windows_path+'data\\databases\\graph.db'
-                print(del_db_command)
-                r_del_db_command = os.popen(del_db_command).read()
-                print(r_del_db_command)
-        else:
-            del_db_command='rm -Rf '+import_neo4j_install_dir.par_value+'data/databases/graph.db'
-            print(del_db_command)
-            r_del_db_command = os.popen(del_db_command).read()
-            print(r_del_db_command)
+                #测试是否删掉
+                if os.path.exists(import_neo4j_install_dir.par_value+'data/databases/graph.db'):
+                    #数据库并未停止继续删除
+                    pass
+                else:
+                    break
+            
+        '''    
         #socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'服务器数据成功清理'})
         #emit('neo4j_rebuild_process', {'message': '服务器数据成功清理'}, broadcast=True)
         #导入数据库
@@ -814,6 +858,9 @@ def neo4j_rebuild(manage_import_data,import_data):
         #socketio.start_background_task(neo4j_import,{'import_command':import_command,'system_type':system_type,'properties':properties,'edge_types':edge_types,'node_labels':node_labels,'edge_count':edge_count,'node_count':node_count,'neo4j_import':neo4j_import, 'import_neo4j_install_dir':import_neo4j_install_dir.par_value,'manage_import_data':manage_import_data,'import_data':import_data})
 
         #发送任务到queue
+        long_run(socketio,'import_data',import_command)
+
+        '''
         import_queue_uuid=str(uuid.uuid1())
         import_queue=JobQueue(u_uuid=import_queue_uuid,u_declare_key='import_data',u_body=import_command,u_publisher_id='import_data',u_publish_datetime=start_import_time,u_no_ack=False,u_start_datetime=None,u_complete_datetime=None,u_status='发布')
         db_session.add(import_queue)
@@ -832,14 +879,15 @@ def neo4j_rebuild(manage_import_data,import_data):
             
             socketio.emit('system_report',{'platform':platform.platform(),'disk_total':disk.total,'disk_free':disk.free,'cpu_percent':psutil.cpu_percent(),'mem_total':mem.total,'mem_used':mem.used,'mem_free':mem.free}, broadcast=True)
             db_session_check=create_session()
-            import_queue_reload=db_session.query(JobQueue).filter(JobQueue.u_uuid==import_queue_uuid).one()
+            import_queue_reload=db_session_check.query(JobQueue).filter(JobQueue.u_uuid==import_queue_uuid).one()
             u_complete_datetime=import_queue_reload.u_complete_datetime
             u_status=import_queue_reload.u_status
             db_session_check.close()
             print(import_queue_uuid)
             print(u_status)
             print(u_complete_datetime)
-
+            
+        '''
         socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'导入数据成功'})
         #emit('neo4j_rebuild_process', {'message': '导入数据成功'}, broadcast=True)
         socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'开始启动分析服务器'})
@@ -902,7 +950,14 @@ def neo4j_rebuild(manage_import_data,import_data):
             currentProperties=CurrentProperties(u_uuid=str(uuid.uuid1()),u_type=_property[0],u_label_type=_property[1],u_column_name=_property[2],u_column_type=_property[3],create_datetime=end_import_time)
             db_session.add(currentProperties)
 
+        #设置其它数据的导入时间为NONE
 
+
+        other_import_data_dbs=db_session.query(ImportData).filter(ImportData.u_end_import_datetime!=end_import_time).all()
+        for item in other_import_data_dbs:
+            #item=other_import_data_dbs[i]
+            item.u_start_import_datetime=None
+            item.u_end_import_datetime=None
         db_session.commit()
         db_session.close()
 
@@ -1002,6 +1057,8 @@ def wait_for_import_end(par_dict):
     for _property in properties:
         currentProperties=CurrentProperties(u_uuid=str(uuid.uuid1()),u_type=_property[0],u_label_type=_property[1],u_column_name=_property[2],u_column_type=_property[3],create_datetime=end_import_time)
         db_session.add(currentProperties)
+    #设置其它的import_data的导入日期为NONE
+    end_import_time
     db_session.commit()
     db_session.close()
         
