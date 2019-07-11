@@ -754,7 +754,7 @@ def neo4j_rebuild(manage_import_data,import_data):
 
 
         db_session.commit()
-        import_command+=' --ignore-extra-columns=true --ignore-missing-nodes=true --ignore-duplicate-nodes=true'
+        import_command+=' --ignore-extra-columns=true --ignore-missing-nodes=true --ignore-duplicate-nodes=true --multiline-fields=true'
         
         #停止Neo4j
         socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'开始停止分析服务器'})
