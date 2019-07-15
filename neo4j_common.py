@@ -62,7 +62,11 @@ def getPath(cypher_sql):
             relationships_colors={}
             
             relationships=graph.relationships
+            #print(len(relationships))
+            flag=0
             for r in relationships:
+                #print(flag)
+                flag+=1
                 r_object=buildEdges(r)
                 relationships_object.append(r_object)
                 data=r_object['data']
@@ -74,6 +78,7 @@ def getPath(cypher_sql):
 
             
             session.close()
+            #print(len(relationships_object))
             return jsonify(elements = {"nodes": nodes_object, "edges": relationships_object,"colors":nodes_colors,"edge_colors":relationships_colors})
 
 
@@ -127,7 +132,7 @@ def buildNodes(nodeRecord):
         for item in nodeRecord.items():
                 
                 items[item[0]]=item[1]
-                print(item)
+                #print(item)
                 if item[0]=="显示名称":
                         name=item[1]
         #label为labels数组的多个形成的组合，用-连接
@@ -140,6 +145,7 @@ def buildNodes(nodeRecord):
         return {"data": data}
 
 def buildEdges(relationRecord):
+        #print(relationRecord)
         items={}
         for item in relationRecord.items():
                 items[item[0]]=item[1]

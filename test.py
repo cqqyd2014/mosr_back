@@ -502,13 +502,25 @@ def node_colors():
         return  jsonify(post.to_json())
 '''
 
+
+@app.route('/neo4j_catlog_properties_code/',methods=['GET'])
+def neo4j_catlog_properties_code():
+    empty=None
+    db_session=create_session()
+    #print(request.args['u_label_type'])
+    post=db_session.query(CurrentProperties).filter(CurrentProperties.u_label_type=='[\''+request.args['u_label_type']+'\']',CurrentProperties.u_column_type=='编码').one()
+    empty={'u_column_name':post.u_column_name}
+    #print(post.u_column_name)
+    db_session.close()
+    return  jsonify(empty)
+
 @app.route('/neo4j_catlog_properties/',methods=['GET'])
 def neo4j_catlog_properties():
     empty=[]
     db_session=create_session()
-    posts=db_session.query(CurrentProperties).all()
+    posts=db_session.query(CurrentProperties.u_type,CurrentProperties.u_column_name,CurrentProperties.u_column_type).group_by(CurrentProperties.u_type,CurrentProperties.u_column_name,CurrentProperties.u_column_type).all()
     for post in posts:
-        empty.append(post.to_json())
+        empty.append({'u_type':post.u_type,'u_column_name':post.u_column_name,'u_column_type':post.u_column_type})
     db_session.close()
     return  jsonify(empty)
 
@@ -754,7 +766,7 @@ def neo4j_rebuild(manage_import_data,import_data):
 
 
         db_session.commit()
-        import_command+=' --ignore-extra-columns=true --ignore-missing-nodes=true --ignore-duplicate-nodes=true --multiline-fields=true'
+        import_command+=' --ignore-extra-columns=true --ignore-missing-nodes=true --ignore-duplicate-nodes=true'
         
         #停止Neo4j
         socketio.start_background_task(long_time_process,{'message_type':"neo4j_rebuild_process", 'message_info':'开始停止分析服务器'})
@@ -1074,6 +1086,8 @@ def test_connect():
 
     
     #socketio.start_background_task(target=background_thread)
+
+
 
 @socketio.on('disconnect')
 def test_disconnect():
