@@ -322,7 +322,15 @@ def get_cols():
     select_table=request.json['select_table']
     database=Database(db_type,db_address,db_port,db_name,db_username,db_password)
     database.getConnection()
-    cols=database.getColumn(select_table)
+    cols=[]
+    try:
+        cols=database.getColumn(select_table)
+        #print("ok")
+        #print(cols)
+    except:
+        cols=[]
+    finally:
+        pass
     #print(jsonify(cols))
     database.closeConnection()
     return jsonify(cols)
@@ -342,7 +350,7 @@ def get_top_row_cells():
     database=Database(db_type,db_address,db_port,db_name,db_username,db_password)
     database.getConnection()
     cols=database.getColumn(select_table)
-    print(cols)
+    #print(cols)
     cells=database.getTopRowCells(select_table,top,cols)
     #print("cols")
     #print(jsonify(cols))
