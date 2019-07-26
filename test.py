@@ -7,7 +7,7 @@ from mosr_back_orm.orm import create_session,SystemPar,init_db,SystemCode,Proces
 from restful import TableRestful
 import os
 from neo4j import GraphDatabase
-from neo4j_common import buildNodes,buildEdges,createNode,getPath,getJson,createEdge
+from python_common.neo4j_common import buildNodes,buildEdges,createNode,getPath,getJson,createEdge
 import datetime
 import uuid
 from python_common.common import Base64Uri
@@ -273,7 +273,14 @@ def edges_upload():
 @app.route('/neo4jdata/')
 def neo4j_data():
     if  'neo4jgraph_cypher' in request.args:
-        return getPath(Base64Uri.decode(request.args['neo4jgraph_cypher']))
+
+        db_session=create_session()
+        systemCodes=db_session.query(SystemCode).filter(SystemCode.code_main=='node_color').all()
+        colors=[]
+        for sc in systemCodes:
+            colors.append(sc.code_code)
+        db_session.close()
+        return getPath(Base64Uri.decode(request.args['neo4jgraph_cypher']),colors)
         
     else:
         pass
@@ -396,8 +403,8 @@ def update_import_data(uuid):
     db_import_neo4j_install_dir=db_session.query(SystemPar).filter(SystemPar.par_code=='import_neo4j_install_dir').one()
     import_neo4j_install_dir=db_import_neo4j_install_dir.par_value
     file_path=import_neo4j_install_dir+"import/"+import_data.u_queue_uuid
-    print(file_path)
-    print(os.path.exists(file_path))
+    #print(file_path)
+    #print(os.path.exists(file_path))
     if os.path.exists(file_path):
         print("start reomve")
         os.remove(file_path)
@@ -453,15 +460,6 @@ def my_templates():
         return  jsonify(empty)
 
 
-    
-@app.route('/neo4jJson/')
-def neo4j_labels():
-    if  'neo4jgraph_cypher' in request.args:
-        #return getPath(request.args['neo4jgraph_cypher'])
-        return getJson(request.args['neo4jgraph_cypher'])
-        
-    else:
-        pass
     
     
         
@@ -599,7 +597,10 @@ def post_process_detail():
     request.get_json(silent=True)
     if not request.json :
         abort(400)
-    processDetail=ProcessDetail(pd_uuid=str(uuid.uuid1()),pd_start_datetime=datetime.datetime.now(),pd_catalog=request.json['pd_catalog'],pd_command=request.json['pd_command'])
+    
+
+    data=request.get_json()
+    processDetail=ProcessDetail(pd_uuid=str(uuid.uuid1()),pd_start_datetime=datetime.datetime.now(),pd_catalog=data['pd_catalog'],pd_command=data['pd_command'])
     db_session=create_session()
     db_session.add(processDetail)
     pd_json= processDetail.to_json()
@@ -683,6 +684,27 @@ def get_system_data():
         #print(s)
     db_session.close()
     return jsonify(empty)
+
+@socketio.on('neo4j_algo')
+def neo4j_algo(par):
+    print(par)
+    if par['type']=='algo.unionFind':
+        #返回一个uuid
+        uuid=long_run(socketio,'algo.unionFind',par['sql'])
+
+
+
+@socketio.on('neo4j_commands')
+def neo4j_commands(commands):
+    #long_run(socketio,'import_data',import_command)
+    for command in commands:
+        print(command)
+        _name=command['_name']
+        _command=command['_command']
+        long_run(socketio,'neo4j_command',_command)
+        socketio.start_background_task(long_time_process,{'message_type':"neo4j_command", 'message_info':_name+'处理完成'})
+    socketio.start_background_task(long_time_process,{'message_type':"command_end", 'message_info':''})
+
 
 
 
@@ -987,6 +1009,8 @@ def long_time_process(messsage):
     
     #print(messsage['message_type'])
     socketio.emit(messsage['message_type'], messsage['message_info'], broadcast=True)
+
+
 background_importing_thread_flag=True
 def neo4j_import(par_dict):
 
