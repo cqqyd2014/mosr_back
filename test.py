@@ -3,7 +3,7 @@ from flask import Flask, request, session, g, redirect, url_for, \
 import json
 from long_time_process import run as long_run
 from flask_cors import CORS
-from mosr_back_orm.orm import create_session,SystemPar,init_db,SystemCode,ProcessDetail,SystemData,QueryTemplate,Neno4jCatalog,JobQueue,ImportData,CurrentNodeLabels,CurrentEdgeTyps,CurrentProperties
+from mosr_back_orm.orm import create_session,SystemPar,init_db,SystemCode,ProcessDetail,SystemData,QueryTemplate,Neno4jCatalog,JobQueue,ImportData,CurrentNodeLabels,CurrentEdgeTyps,CurrentProperties,AlgorithmRsCCD,AlgorithmRsCCDD
 from restful import TableRestful
 import os
 from neo4j import GraphDatabase
@@ -20,6 +20,8 @@ from flask.json import JSONEncoder as _JSONEncoder
 import time
 from eventlet.green import threading
 import psutil
+from sqlalchemy import func
+from sqlalchemy import and_
 
 class JSONEncoder(json.JSONEncoder):
 
@@ -149,7 +151,7 @@ def import_queue_upload():
 
     u_body={'db_type':db_type,'db_address':db_address,'db_port':db_port,'db_name':db_name,'db_username':db_username,'db_password':db_password,'select_table':select_table,'column_items':column_items,'label_items':label_items,'node_edge':node_edge,'edge_type':edge_type}
     print(edge_type)
-    queue=JobQueue(u_uuid=queue_uuid,u_declare_key='download_data',u_body=str(u_body),u_publisher_id='import_queue_upload',u_publish_datetime=create_pub_time,u_no_ack=False,u_start_datetime=None,u_complete_datetime=None,u_status='发布')
+    queue=JobQueue(u_uuid=queue_uuid,u_declare_key='download_data',u_body=str(u_body),u_publisher_id='download_data',u_publish_datetime=create_pub_time,u_no_ack=False,u_start_datetime=None,u_complete_datetime=None,u_status='发布')
     db_session=create_session()
     db_session.add(queue)
     db_session.commit()
@@ -688,11 +690,64 @@ def get_system_data():
 @socketio.on('neo4j_algo')
 def neo4j_algo(par):
     print(par)
+
     if par['type']=='algo.unionFind':
         #返回一个uuid
         uuid=long_run(socketio,'algo.unionFind',par['sql'])
+        print(uuid)
+        socketio.start_background_task(long_time_process,{'message_type':"algo.unionFind.uuid", 'message_info':uuid})
+
+#获取社群分析的节点数量
 
 
+@app.route('/union_find_node_sum/',methods=['GET'])
+def union_find_node_sum():
+    empty = []
+    db_session=create_session()
+    sum_rs=0
+    if  'min_set_count' not in request.args:
+        post=db_session.query(func.sum(AlgorithmRsCCD.u_size).label("u_size")).filter(AlgorithmRsCCD.u_uuid==request.args['u_uuid']).one()
+        sum_rs=post.u_size
+    else:
+        post=db_session.query(func.sum(AlgorithmRsCCD.u_size).label("u_size")).filter(AlgorithmRsCCD.u_uuid==request.args['u_uuid'],AlgorithmRsCCD.u_size>=int(request.args['min_set_count']),AlgorithmRsCCD.u_size<=int(request.args['max_set_count'])).one()
+        sum_rs=post.u_size
+    db_session.close()
+    return {'sum_rs':sum_rs}
+
+#获取社群分析的组数量，组的成员大于1
+
+@app.route('/union_find_set_sum/',methods=['GET'])
+def union_find_node_count():
+    empty = []
+    db_session=create_session()
+    count_rs=0
+    if  'min_set_count' not in request.args:
+        post=db_session.query(func.count(AlgorithmRsCCD.u_size).label("u_size")).filter(AlgorithmRsCCD.u_uuid==request.args['u_uuid']).one()
+        count_rs=post.u_size
+    else:
+        post=db_session.query(func.count(AlgorithmRsCCD.u_size).label("u_size")).filter(AlgorithmRsCCD.u_uuid==request.args['u_uuid'],AlgorithmRsCCD.u_size>=request.args['min_set_count'],AlgorithmRsCCD.u_size<=request.args['max_set_count']).one()
+        count_rs=post.u_size
+    db_session.close()
+    return {'set_sum':count_rs}
+
+@app.route('/union_find_data/',methods=['GET'])
+def union_find_data():
+    empty = []
+    db_session=create_session()
+    posts=db_session.query(AlgorithmRsCCD).filter(AlgorithmRsCCD.u_uuid==request.args['u_uuid'],AlgorithmRsCCD.u_size>=request.args['min_set_count'],AlgorithmRsCCD.u_size<=request.args['max_set_count']).order_by(AlgorithmRsCCD.u_size.desc()).all()
+    for post in posts:
+        posts2=db_session.query(AlgorithmRsCCDD).filter(AlgorithmRsCCDD.u_uuid==request.args['u_uuid'],AlgorithmRsCCDD.u_setId==post.u_setId).all()
+        line=[]
+        for post2 in posts2:
+            #line.append({'u_nodeId':post2.u_nodeId,'u_nodeName':post2.u_nodeName})
+            #line.append(post2.u_nodeName)
+            line.append([post2.u_nodeId,post2.u_nodeName])
+        empty.append({'setId':post.u_setId,'names':line})
+        posts2=None
+        
+    db_session.close()
+    return jsonify(empty)
+    
 
 @socketio.on('neo4j_commands')
 def neo4j_commands(commands):
