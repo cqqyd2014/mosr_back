@@ -1,6 +1,3 @@
-[submodule "mosr_back_orm"]
-	path = mosr_back_orm
-	url = git@github.com:cqqyd2014/mosr_back_orm.git
 [submodule "python_common"]
 	path = python_common
 	url = git@github.com:cqqyd2014/python_common.git

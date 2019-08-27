@@ -1,8 +1,12 @@
-from mosr_back_orm.orm import create_session,SystemPar,init_db,SystemCode,ProcessDetail,SystemData,QueryTemplate,Neno4jCatalog,JobQueue,ImportData,CurrentNodeLabels,CurrentEdgeTyps,CurrentProperties
+
 import uuid
 import datetime
 import psutil
 import platform
+
+from database.orm_session import create_session
+from database.orm import SystemPar,SystemCode,ProcessDetail,QueryTemplate,Neo4jCatalog,JobQueue,ImportData,CurrentNodeLabels,CurrentEdgeTypes,CurrentProperties
+
 
 def run(socketio,l_type,long_process_command):
         #发送任务到queue
