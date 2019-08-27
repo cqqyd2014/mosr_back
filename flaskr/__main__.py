@@ -1177,17 +1177,3 @@ def test_connect():
 def test_disconnect():
     print('Client disconnected')
 
-
-
-if __name__=='__main__':  
-    #app.debug = True
-    #app.run(host='0.0.0.0')
-    
-
-    app.config['SECRET_KEY'] = 'S'
-    app.json_encoder = JSONEncoder
-    CORS(app, resources=r'/*')
-    
-
-
-    socketio.run(app,debug=True,host='0.0.0.0',port=5000)
