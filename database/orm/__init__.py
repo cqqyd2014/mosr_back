@@ -27,3 +27,7 @@ from .neo4j_catalog import Neo4jCatalog
 from .node_label_color import NodeLabelColor
 from .process_detail import ProcessDetail
 from .query_template import QueryTemplate
+
+
+postgresql_conn_str = "postgresql+psycopg2://mosr:Wang1980@localhost:33133/mosr"
+engine = create_engine(postgresql_conn_str, isolation_level = 'READ COMMITTED',pool_size=10)

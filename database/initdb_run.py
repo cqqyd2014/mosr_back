@@ -2,7 +2,11 @@
 #数据库初始化
 import datetime
 import uuid
+import click
+from flask import current_app, g
+from flask.cli import with_appcontext
 
+from flaskr import db
 from .orm_session import create_session,_create_db_table
 from .orm import SystemPar,SystemCode,ProcessDetail
 import platform
@@ -116,11 +120,18 @@ def init_db(db_session):
     print('init db ok！')
 
 
-def main():
-    db_session=create_session()
-    init_db(db_session)
-    db_session.close()
-    
 
-if __name__ == '__main__':
-    main()
+
+@click.command('init-db')
+@with_appcontext
+def init_db_command():
+    db_session=db.get_flask_db()
+    init_db(db_session)
+    
+    click.echo('Initialized the database.')
+
+
+
+def init_app(app):
+    app.teardown_appcontext(db.close_flask_db)
+    app.cli.add_command(init_db_command)

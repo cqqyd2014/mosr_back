@@ -4,8 +4,8 @@ from . import Base,Column,String,Integer,Text,DateTime,Boolean,Date,Numeric
 
 
 
-class CompanyBaseInfo(Base):
-    __tablename__ = "company_base_info"
+class NetTycCompanyBaseInfo(Base):
+    __tablename__ = "net_tyc_company_base_info"
     c_name=Column(String(1024), unique=True)
     c_uscc=Column(String(64), unique=True)#统一社会信用代码
     c_reg_capital=Column(Numeric)

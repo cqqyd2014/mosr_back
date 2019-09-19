@@ -3,8 +3,8 @@ import json
 from python_common.common import DateTimeEncoder
 from . import Base,Column,String,Integer,Text,DateTime,Boolean,Date,Numeric
 
-class CompanyBranch(Base):
-    __tablename__ = "compnay_branch"
+class NetTycCompanyBranch(Base):
+    __tablename__ = "net_tyc_compnay_branch"
 
     c_branch_id=Column(String(512), primary_key=True)
     c_branch_name=Column(String(512))

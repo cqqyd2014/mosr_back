@@ -1,10 +1,8 @@
 
-
-
-
+from flask import current_app, g
 import os
-
 from flask import Flask
+from database import *
 
 
 def create_app(test_config=None):
@@ -37,4 +35,10 @@ def create_app(test_config=None):
     def hello():
         return 'Hello, World!'
 
+
+    from database import initdb_run
+    initdb_run.init_app(app)
+    from back_queue import main_run
+    main_run.init_app(app)
     return app
+

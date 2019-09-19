@@ -4,8 +4,8 @@ import json
 from python_common.common import DateTimeEncoder
 from . import Base,Column,String,Integer,Text,DateTime,Boolean,Date
 
-class CompanyChangeLog(Base):
-    __tablename__ = "compnay_change_log"
+class NetTycCompanyChangeLog(Base):
+    __tablename__ = "net_tyc_compnay_change_log"
     c_change_order=Column(Integer, primary_key=True)
     c_change_date=Column(Date)
     c_change_item=Column(String(512))
