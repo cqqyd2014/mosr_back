@@ -112,12 +112,9 @@ def init_db(db_session):
                             code_code='99CC33', code_value='99CC33', code_type=2)
     db_session.add(systemCode)
      # 测试数据
-    processDetail = ProcessDetail(pd_uuid=str(uuid.uuid1()), pd_start_datetime=datetime.datetime.now(), pd_catalog='systest',
-                                  pd_command='SQL1Annotations are a concept used internally by SQLAlchemy in order to store additional information along with ClauseElement objects. A Python dictionary is associated with a copy of the object, which contains key/value pairs significant to various internal systems, mostly within the ORM:')
-    db_session.add(processDetail)
+
 
     db_session.commit()
-    print('init db ok！')
 
 
 
@@ -126,9 +123,9 @@ def init_db(db_session):
 @with_appcontext
 def init_db_command():
     db_session=db.get_flask_db()
+    click.echo('Initialized the database start.')
     init_db(db_session)
-    
-    click.echo('Initialized the database.')
+    click.echo('Initialized the database compelet.')
 
 
 

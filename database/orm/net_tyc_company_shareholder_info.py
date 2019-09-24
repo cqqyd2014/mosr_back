@@ -3,8 +3,8 @@ import json
 from python_common.common import DateTimeEncoder
 from . import Base,Column,String,Integer,Text,DateTime,Boolean,Date,Numeric
 
-class CompanyShareholderInfo(Base):
-    __tablename__ = "company_shareholder_info"
+class NetTycCompanyShareholderInfo(Base):
+    __tablename__ = "net_tyc_company_shareholder_info"
     c_shareholder_name=Column(String(512))
     c_shareholder_id=Column(String(512), primary_key=True)
     c_shareholder_percent=Column(Numeric)

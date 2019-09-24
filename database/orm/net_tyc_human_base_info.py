@@ -4,8 +4,8 @@ from . import Base,Column,String,Integer,Text,DateTime,Boolean,Date,Numeric
 
 
 
-class HumanBaseInfo(Base):
-    __tablename__ = "human_base_info"
+class NetTycHumanBaseInfo(Base):
+    __tablename__ = "net_tyc_human_base_info"
     h_human_id=Column(String(64),primary_key=True)
     h_human_name=Column(String(128))
     h_human_idcard=Column(String(18))

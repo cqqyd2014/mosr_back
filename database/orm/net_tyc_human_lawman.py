@@ -4,8 +4,8 @@ from python_common.common import DateTimeEncoder
 from . import Base,Column,String,Integer,Text,DateTime,Boolean,Date,Numeric
 
 
-class HumanLawman(Base):
-    __tablename__ = "human_lawman"
+class NetTycHumanLawman(Base):
+    __tablename__ = "net_tyc_human_lawman"
     h_human_id=Column(String(64),primary_key=True)
     h_human_name=Column(String(256))
     c_company_id=Column(String(64),primary_key=True)
