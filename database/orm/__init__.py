@@ -29,5 +29,5 @@ from .process_detail import ProcessDetail
 from .query_template import QueryTemplate
 
 
-postgresql_conn_str = "postgresql+psycopg2://mosr:Wang1980@postgres11:33133/mosr"
+postgresql_conn_str = "postgresql+psycopg2://xywl:Wang1980@postgres11:33133/xywl"
 engine = create_engine(postgresql_conn_str, isolation_level = 'READ COMMITTED',pool_size=10)
