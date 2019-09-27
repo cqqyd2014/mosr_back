@@ -11,3 +11,4 @@ pip install eventlet
 pip install pymssql
 pip install cx_Oracle
 pip install flask_socketio
+pip install selenium

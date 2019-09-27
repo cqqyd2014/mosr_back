@@ -10,3 +10,4 @@ pip3 install eventlet
 pip3 install pymssql
 pip3 install cx_Oracle
 pip3 install flask_socketio
+pip3 install selenium

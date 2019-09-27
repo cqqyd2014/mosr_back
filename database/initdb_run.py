@@ -7,15 +7,16 @@ from flask import current_app, g
 from flask.cli import with_appcontext
 
 from flaskr import db
-from .orm_session import create_session,_create_db_table
-from .orm import SystemPar,SystemCode,ProcessDetail
+#from .orm_session import create_session,_create_db_table
+from .orm import *
 import platform
 from python_common.selenium_common import init_database_system_par
 from python_common.database_common import base_system_code
 
 
 def init_db(db_session):
-    _create_db_table()
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
     db_session.commit()
     SystemPar.delete_all(db_session)
     SystemCode.delete_all(db_session)
