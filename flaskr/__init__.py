@@ -12,10 +12,7 @@ def create_app(test_config=None):
     from .root import root_bp
     app.register_blueprint(root_bp)
 
-    app.config.from_mapping(
-        SECRET_KEY='dev',
-        DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
-    )
+    app.config.from_envvar('XYWL2019_SETTINGS')
 
     if test_config is None:
         # load the instance config, if it exists, when not testing
@@ -35,10 +32,18 @@ def create_app(test_config=None):
     def hello():
         return 'Hello, World!'
 
-
+    #注册命令行
     from database import initdb_run
     initdb_run.init_app(app)
     from back_queue import main_run
     main_run.init_app(app)
+    ##
+    from chongqingzixun import read_attach
+    read_attach.init_app(app)
+
+    #蓝图
+    from net_tyc import flask_route
+    app.register_blueprint(flask_route.bp)
+
     return app
 
