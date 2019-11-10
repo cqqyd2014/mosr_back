@@ -9,75 +9,23 @@ from flask.cli import with_appcontext
 from flaskr import db
 #from .orm_session import create_session,_create_db_table
 from .orm import *
+#from net_tyc.database import *
+#from bank.database import *
 import platform
 from python_common.selenium_common import init_database_system_par
-from python_common.database_common import base_system_code
+#from python_common.database_common import base_system_code
+
+from bank.database.initdb_sub import sub_run as bank_sub_run
+from system.database.initdb_sub import sub_run as system_sub_run
 
 
 def init_db(db_session):
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     db_session.commit()
-    SystemPar.delete_all(db_session)
-    SystemCode.delete_all(db_session)
-    db_session.commit()
-    system_type=''
-    if platform.platform().find('Windows')>=0:
-        system_type='Windows'
-    elif platform.platform().find('Darwin')>=0:
-        system_type='Mac'
-    elif platform.platform().find('Linux')>=0:
-        system_type='Linux'
-    else:
-        system_type=None
-    base_system_code(db_session,SystemCode)
-    init_database_system_par(system_type,db_session,SystemPar)
-    # 基础数据
-    systemPar = SystemPar(par_code='version',
-                          par_desc='版本信息', par_value='1.0', par_type=2)
-    db_session.add(systemPar)
-    systemPar = SystemPar(par_code='node_count',
-                          par_desc='节点数量', par_value='0', par_type=1)
-    db_session.add(systemPar)
-    systemPar = SystemPar(par_code='edge_count',
-                          par_desc='关系数量', par_value='0', par_type=1)
-    db_session.add(systemPar)
-    systemPar = SystemPar(par_code='polling_second',
-                          par_desc='Queue轮询间隔秒数', par_value='5', par_type=1)
-    db_session.add(systemPar)
+    '''
+    
 
-    if system_type=='UNIX':
-        systemPar = SystemPar(par_code='import_neo4j_install_dir', par_desc='数据导入NEO4J安装目录',
-                          par_value='/u01/cqaudit/software/neo4j-enterprise-3.5.6/', par_type=2)
-        db_session.add(systemPar)
-    else:
-        systemPar = SystemPar(par_code='import_neo4j_install_dir', par_desc='数据导入NEO4J安装目录',
-                          par_value='D:/software/neo4j-enterprise-3.5.6/', par_type=2)
-        db_session.add(systemPar)
-    systemPar = SystemPar(par_code='download_batch', par_desc='从远程服务器下载数据的批量',
-                          par_value='10000', par_type=1)
-    db_session.add(systemPar)
-    systemPar = SystemPar(par_code='csv_batch', par_desc='读取和写入csv的批量',
-                          par_value='10000', par_type=1)
-    db_session.add(systemPar)
-    systemPar = SystemPar(par_code='neo4j_status', par_desc='NEO4J状态',
-                          par_value='未知', par_type=2)  # 可以为未知、启动中，运行中、关闭中，已关闭
-    db_session.add(systemPar)
-    systemPar = SystemPar(par_code='import_status',
-                          par_desc='导入状态', par_value='空闲', par_type=2)  # 空闲、导入中
-    db_session.add(systemPar)
-    systemPar = SystemPar(par_code='neo4j_last_import_datetime',
-                          par_desc='NEO4J数据最后更新时间', par_value='2019-06-07 12:44:44.0000', par_type=4)
-    db_session.add(systemPar)
-    systemCode = SystemCode(code_main='process_type', code_desc='任务类型',
-                            code_code='systest', code_value='系统测试', code_type=2)
-    db_session.add(systemCode)
-    systemCode = SystemCode(code_main='process_type', code_desc='任务类型',
-                            code_code='basedataimport', code_value='基础数据采集', code_type=2)
-    db_session.add(systemCode)
-    systemCode = SystemCode(code_main='process_type', code_desc='任务类型',
-                            code_code='customizedataimport', code_value='自定义数据采集', code_type=2)
-    db_session.add(systemCode)
     # 节点色彩
     systemCode = SystemCode(code_main='node_color', code_desc='节点色彩',
                             code_code='FFFFCC', code_value='FFFFCC', code_type=2)
@@ -117,6 +65,10 @@ def init_db(db_session):
 
     db_session.commit()
 
+    '''
+    #加载其他分项的初始化数据
+    bank_sub_run(db_session)
+    system_sub_run(db_session)
 
 
 

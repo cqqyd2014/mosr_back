@@ -1,7 +1,7 @@
 import functools
 from flask import Response
 
-from net_tyc.restfulapi import *
+from bank.restfulapi import BankOuterTradeDetailAPI,BankInfoAPI
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for
@@ -10,13 +10,13 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from flaskr.db import get_flask_db
 
-bp = Blueprint('net_tyc', __name__, url_prefix='/net_tyc')
+bank = Blueprint('bank', __name__, url_prefix='/bank')
 
-@bp.route('/hello', methods=('GET', 'POST'))
+@bank.route('/hello', methods=('GET', 'POST'))
 def hello():
     return 'Hello, World!'
 
-@bp.route('/large.csv')
+@bank.route('/large.csv')
 def generate_large_csv():
     def generate():
         for row in iter_all_rows():
@@ -25,5 +25,6 @@ def generate_large_csv():
 
 def iter_all_rows():
     pass
-system_wait_for_search_company_view = SystemWaitForSearchCompanyAPI.as_view('system_wait_for_search_company_api')
-bp.add_url_rule('/system_wait_for_search_companies/', view_func=SystemWaitForSearchCompanyAPI.as_view('system_wait_for_search_companies'))
+#outer_trade_detail_view = BankOuterTradeDetailAPI.as_view('system_wait_for_search_company_api')
+bank.add_url_rule('/outer_trade_details/', view_func=BankOuterTradeDetailAPI.as_view('outer_trade_details'))
+bank.add_url_rule('/infos/', view_func=BankInfoAPI.as_view('infos'))

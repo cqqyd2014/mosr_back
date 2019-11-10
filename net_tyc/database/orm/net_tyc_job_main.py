@@ -1,7 +1,7 @@
 
 import json
 from python_common.common import DateTimeEncoder
-from . import Base,Column,String,Integer,Text,DateTime,Boolean,Date,Numeric
+from database import Base,Column,String,Integer,Text,DateTime,Boolean,Date,Numeric
 
 
 class NetTycJobMain(Base):

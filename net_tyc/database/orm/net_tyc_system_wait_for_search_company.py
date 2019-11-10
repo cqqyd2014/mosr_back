@@ -12,7 +12,7 @@ class NetTycSystemWaitForSearchCompany(Base):
     u_company_name = Column(String(512))
     u_start_search_datetime = Column(DateTime)
     u_end_search_datetime = Column(DateTime)
-    u_status = Column(String(16))#准备、开始查询、查询出错、查询完毕、已删除
+    u_status = Column(String(16))#等待查询、开始查询、查询出错、查询完毕、已删除
     
     @staticmethod
     def saveOfUpdate(self, session):

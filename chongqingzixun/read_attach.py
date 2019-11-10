@@ -4,6 +4,7 @@ import click
 from flask import current_app, g
 from flask.cli import with_appcontext
 import os
+import time
 
 from docx import Document
 
@@ -22,6 +23,20 @@ def init_app(app):
 def read_attach_command():
     print("start")
     print("end")
+
+
+
+
+@click.command('solar-charging')
+@with_appcontext
+def solar_charging_command():
+    print("一言不合就充电")
+    print("太阳能充电开始")
+    while True:
+        print('正在充电……请稍后')
+        time.sleep(10)
+    print('智商检测完毕')
+
 
 
 def open_file(file_path):

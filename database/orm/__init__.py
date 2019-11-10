@@ -8,13 +8,7 @@ Base = declarative_base()
 
 
 from python_common.orm import SystemCode,SystemPar
-from .net_tyc_company_base_info import NetTycCompanyBaseInfo
-from .net_tyc_company_change_log import NetTycCompanyChangeLog
-from .net_tyc_company_main_member import NetTycCompanyMainMember
-from .net_tyc_company_shareholder_info import NetTycCompanyShareholderInfo
-from .net_tyc_human_base_info import NetTycHumanBaseInfo
-from .net_tyc_human_lawman import NetTycHumanLawman
-from .net_tyc_company_branch import NetTycCompanyBranch
+
 from .algorithm_rs_CCD import AlgorithmRsCCD
 from .algorithm_rs_CCDD import AlgorithmRsCCDD
 from .algorithm_rs_CCM import AlgorithmRsCCM
