@@ -7,7 +7,6 @@ Base = declarative_base()
 
 
 
-from python_common.orm import SystemCode,SystemPar
 
 from .algorithm_rs_CCD import AlgorithmRsCCD
 from .algorithm_rs_CCDD import AlgorithmRsCCDD

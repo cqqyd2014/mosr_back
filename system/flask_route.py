@@ -28,3 +28,4 @@ def iter_all_rows():
 #outer_trade_detail_view = BankOuterTradeDetailAPI.as_view('system_wait_for_search_company_api')
 #bank.add_url_rule('/outer_trade_details/', view_func=BankOuterTradeDetailAPI.as_view('outer_trade_details'))
 system.add_url_rule('/pars/', view_func=SystemParAPI.as_view('pars'))
+system.add_url_rule('/pars/<string:par_code>', view_func=SystemParAPI.as_view('pars_par_code'))

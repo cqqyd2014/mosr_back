@@ -1,4 +1,7 @@
-from database.orm import Base,Column,String,Integer
+
+import uuid,datetime
+
+from database.orm import Base,Column,String,Integer,DateTime
 
 
 class SystemPar(Base):
@@ -7,6 +10,9 @@ class SystemPar(Base):
     par_desc = Column(String(128))
     par_value = Column(String(1024))
     par_type = Column(Integer)  # 1为数字2为文本3为日期4为日期时间（含毫秒）
+
+    last_modified=Column(DateTime,default=datetime.datetime.now)
+    e_tag=Column(String(36),default=str(uuid.uuid1()))
 
     @staticmethod
     def delete_all(db_session):

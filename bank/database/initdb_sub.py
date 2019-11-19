@@ -12,7 +12,6 @@ from bank.database.orm import BankInfo
 from net_tyc.database import *
 import platform
 from python_common.selenium_common import init_database_system_par
-from python_common.database_common import base_system_code
 
 
 def sub_run(db_session):

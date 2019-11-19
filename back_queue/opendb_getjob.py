@@ -1,6 +1,9 @@
-from database import get_db,SystemPar,SystemCode,ProcessDetail,QueryTemplate,JobQueue,ImportData
+from database import get_db,ProcessDetail,QueryTemplate,JobQueue,ImportData
 import datetime
 import sys
+
+
+from system.database.orm import *
 
 def opendb_getjob(u_declare_key,job):
    

@@ -8,7 +8,7 @@ from flask.cli import with_appcontext
 
 from flaskr import db
 #from .orm_session import create_session,_create_db_table
-from bank.database.orm import SystemPar,SystemCode
+from system.database.orm import SystemPar,SystemCode
 
 import platform
 
@@ -74,6 +74,33 @@ def sub_run(db_session):
     db_session.add(systemCode)
     systemCode = SystemCode(code_main='process_type', code_desc='任务类型',
                             code_code='customizedataimport', code_value='自定义数据采集', code_type=2)
+    db_session.add(systemCode)
+    systemCode = SystemCode(code_main='currency', code_desc='货币',
+                            code_code='CNY', code_value='人民币元', code_type=2)
+    db_session.add(systemCode)
+    systemCode = SystemCode(code_main='currency', code_desc='货币',
+                            code_code='HKD', code_value='港元', code_type=2)
+    db_session.add(systemCode)
+    systemCode = SystemCode(code_main='currency', code_desc='货币',
+                            code_code='JPY', code_value='日圆', code_type=2)
+    db_session.add(systemCode)
+    systemCode = SystemCode(code_main='currency', code_desc='货币',
+                            code_code='SUR', code_value='卢布', code_type=2)
+    db_session.add(systemCode)
+    systemCode = SystemCode(code_main='currency', code_desc='货币',
+                            code_code='CAD', code_value='加元', code_type=2)
+    db_session.add(systemCode)
+    systemCode = SystemCode(code_main='currency', code_desc='货币',
+                            code_code='USD', code_value='美元', code_type=2)
+    db_session.add(systemCode)
+    systemCode = SystemCode(code_main='currency', code_desc='货币',
+                            code_code='AUD', code_value='澳大利亚元', code_type=2)
+    db_session.add(systemCode)
+    systemCode = SystemCode(code_main='currency', code_desc='货币',
+                            code_code='NZD', code_value='新西兰元', code_type=2)
+    db_session.add(systemCode)
+    systemCode = SystemCode(code_main='currency', code_desc='货币',
+                            code_code='SGD', code_value='新加坡元', code_type=2)
     db_session.add(systemCode)
     db_session.commit()
 

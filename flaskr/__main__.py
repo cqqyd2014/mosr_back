@@ -6,7 +6,7 @@ from flask_cors import CORS
 from flask_socketio import SocketIO
 
 from database import *
-from . import db
+from .db import close_flask_db
 
 
 def create_app(test_config=None):
@@ -54,11 +54,11 @@ def create_app(test_config=None):
     app.register_blueprint(bank_route.bank)
 
     from system import flask_route as system_route
-    app.register_blueprint(system_route)
+    app.register_blueprint(system_route.system)
    
 
 
-    app.teardown_appcontext(db.close_flask_db)
+    app.teardown_appcontext(close_flask_db)
 
     
 
@@ -76,17 +76,19 @@ if __name__ == "__main__":
     flask_env_production_or_development = os.environ.get("FLASK_ENV", default="production")
     
     app=create_app()
-    socketio = SocketIO()
-    socketio.init_app(app)
-    from system import flask_socket as system_socket
+    socketio = SocketIO(app,cors_allowed_origins='*')
+    #socketio.init_app(app)
+    from system import connect_event,disconnect_event
 
-    socketio.on_event('connect_event', system_socket.connect_event, namespace='/system_socket')
+    socketio.on_event('connect', connect_event,namespace='/system')
+    socketio.on_event('disconnect',disconnect_event,namespace='/system')
 
     if flask_env_production_or_development=='production':
         socketio.run(app,debug=False,host='0.0.0.0',port=5000)
     else:
-        print(flask_env_production_or_development)
+        
         socketio.run(app,debug=True,host='0.0.0.0',port=5000)
+    
     
     
 

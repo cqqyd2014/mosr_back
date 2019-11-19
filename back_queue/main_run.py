@@ -16,7 +16,7 @@ from .algoUnionFind import unionFind
 import sys
 
 
-from database import SystemPar
+from system.database.orm import *
 from flaskr import db
 
 

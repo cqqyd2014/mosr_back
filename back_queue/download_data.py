@@ -1,6 +1,6 @@
 import os
 from neo4j import GraphDatabase
-from database import get_db,SystemPar,SystemCode,ProcessDetail,QueryTemplate,JobQueue,ImportData
+from database import get_db,ProcessDetail,QueryTemplate,JobQueue,ImportData
 import datetime
 import uuid
 from sqlalchemy import desc
@@ -9,6 +9,7 @@ import ast
 import csv
 import sys
 from .opendb_getjob import opendb_getjob
+from system.database.orm import *
 
 
 

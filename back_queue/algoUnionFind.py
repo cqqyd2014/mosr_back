@@ -1,7 +1,7 @@
 
 #encoding=utf-8
 import os
-from database import AlgorithmRsCCDD,AlgorithmRsCCD,AlgorithmRsCCM,get_db,SystemPar,SystemCode,ProcessDetail,QueryTemplate,JobQueue,ImportData
+from database import AlgorithmRsCCDD,AlgorithmRsCCD,AlgorithmRsCCM,get_db,ProcessDetail,QueryTemplate,JobQueue,ImportData
 import datetime
 from python_common.neo4j_common import command
 import time

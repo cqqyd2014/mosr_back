@@ -1,11 +1,12 @@
 
 #encoding=utf-8
 import os
-from database import get_db,SystemPar,SystemCode,ProcessDetail,QueryTemplate,JobQueue,ImportData
+from database import get_db,ProcessDetail,QueryTemplate,JobQueue,ImportData
 import datetime
 import platform
 import time
 from .opendb_getjob import opendb_getjob
+from system.database.orm import *
 
 def clean_neo4j():
     opendb_getjob('clean_neo4j',job)
