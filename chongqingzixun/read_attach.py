@@ -8,7 +8,7 @@ import time
 
 from docx import Document
 
-#from win32com import client as wc
+from win32com import client as wc
 
 
 from flaskr import db

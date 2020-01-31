@@ -1,12 +1,12 @@
 
-from flask import current_app, g
+#from flask import current_app, g
 import os
 from flask import Flask
 from flask_cors import CORS
 from flask_socketio import SocketIO
 
 from database import *
-from .db import close_flask_db
+from flaskr.db import close_flask_db
 
 
 def create_app(test_config=None):
@@ -36,6 +36,8 @@ def create_app(test_config=None):
     def hello():
         return 'Hello, World!'
 
+    
+    
     #注册命令行
     from database import initdb_run
     initdb_run.init_app(app)
@@ -56,7 +58,8 @@ def create_app(test_config=None):
     from system import flask_route as system_route
     app.register_blueprint(system_route.system)
    
-
+    from public import flask_route as public_route
+    app.register_blueprint(public_route.public)
 
     app.teardown_appcontext(close_flask_db)
 
@@ -74,8 +77,9 @@ if __name__ == "__main__":
     import os
 
     flask_env_production_or_development = os.environ.get("FLASK_ENV", default="production")
-    
     app=create_app()
+    
+    app.config['session_save_to_mem_or_database']=os.environ.get("SESSION_SAVE_TO_MEM_OR_DATABASE", default="MEM")
     socketio = SocketIO(app,cors_allowed_origins='*')
     #socketio.init_app(app)
     from system import connect_event,disconnect_event

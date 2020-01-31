@@ -2,13 +2,16 @@
 #数据库初始化
 import datetime
 import uuid
+import hashlib
+
+
 import click
 from flask import current_app, g
 from flask.cli import with_appcontext
 
 from flaskr import db
 #from .orm_session import create_session,_create_db_table
-from system.database.orm import SystemPar,SystemCode
+from system.database.orm import SystemPar,SystemCode,SystemUser
 
 import platform
 
@@ -102,6 +105,10 @@ def sub_run(db_session):
     systemCode = SystemCode(code_main='currency', code_desc='货币',
                             code_code='SGD', code_value='新加坡元', code_type=2)
     db_session.add(systemCode)
+    #加管理员用户
+    administrator=SystemUser(user_uuid=uuid.uuid1(),user_name='Administrator'
+                              ,user_desc_name='管理员',user_password='Wang1980',user_password_md5=hashlib.md5('Wang1980'.encode(encoding='UTF-8')).hexdigest())
+    db_session.add(administrator)
     db_session.commit()
 
 

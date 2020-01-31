@@ -1,6 +1,6 @@
 
 
-from .initdb_run import init_db
+from database.initdb_run import init_db
 from . import get_db
 
 
