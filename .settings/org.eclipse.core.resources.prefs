@@ -1,2 +1,3 @@
 eclipse.preferences.version=1
-encoding//system/database/initdb_sub.py=utf-8
+encoding//bank/database/initdb_sub.py=utf-8
+encoding//database/initdb_run.py=utf-8

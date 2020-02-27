@@ -5,8 +5,8 @@ from flask import Flask
 from flask_cors import CORS
 from flask_socketio import SocketIO
 
-from database import *
-from flaskr.db import close_flask_db
+
+from .db import close_flask_db
 
 
 def create_app(test_config=None):
@@ -39,28 +39,19 @@ def create_app(test_config=None):
     
     
     #注册命令行
-    from database import initdb_run
-    initdb_run.init_app(app)
-    from back_queue import main_run
-    main_run.init_app(app)
+   
+    
 
-    ##
-    from chongqingzixun import read_attach
-    read_attach.init_app(app)
+   
 
     #蓝图
-    from net_tyc import flask_route as net_tyc_route
-    app.register_blueprint(net_tyc_route.bp)
+   
 
-    from bank import flask_route as bank_route
-    app.register_blueprint(bank_route.bank)
-
+    
     from system import flask_route as system_route
     app.register_blueprint(system_route.system)
    
-    from public import flask_route as public_route
-    app.register_blueprint(public_route.public)
-
+    
     app.teardown_appcontext(close_flask_db)
 
     

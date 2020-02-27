@@ -8,7 +8,7 @@ from flask import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from flaskr.db import get_flask_db
+from server.db import get_flask_db
 
 system = Blueprint('system', __name__, url_prefix='/system')
 
@@ -27,5 +27,9 @@ def iter_all_rows():
     pass
 #outer_trade_detail_view = BankOuterTradeDetailAPI.as_view('system_wait_for_search_company_api')
 #bank.add_url_rule('/outer_trade_details/', view_func=BankOuterTradeDetailAPI.as_view('outer_trade_details'))
-system.add_url_rule('/pars/', view_func=SystemParAPI.as_view('pars'))
-system.add_url_rule('/pars/<string:par_code>', view_func=SystemParAPI.as_view('pars_par_code'))
+system.add_url_rule('/system_parameters/', view_func=SystemParametersAPI.as_view('system_parameters'))
+system.add_url_rule('/system_parameters/<string:s_param>', view_func=SystemParametersAPI.as_view('system_parameters_s_param'))
+system.add_url_rule('/users/', view_func=UsersAPI.as_view('users'))
+system.add_url_rule('/users/<string:u_uuid>', view_func=UsersAPI.as_view('users_uuid'))
+system.add_url_rule('/users/login/<string:login_u_user_name>/<string:login_u_user_password>', view_func=UsersAPI.as_view('users_login'))
+system.add_url_rule('/users/permission/<string:user_uuid_for_permission>', view_func=UsersAPI.as_view('users_permission'))

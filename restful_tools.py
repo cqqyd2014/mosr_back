@@ -1,7 +1,7 @@
 
 import datetime
 import json
-from collections import Iterable
+from collections.abc import Iterable
 import base64
 
 from urllib import parse
@@ -9,7 +9,7 @@ from urllib import parse
 from functools import wraps
 from flask import Flask, request
 from flask import jsonify
-from database.orm import Base
+from orm import Base
 
 class Base_par:
     '''
@@ -31,7 +31,10 @@ class DateTime_par(Base_par):
             raise RestException('数据不是2019-01-30 15:29:08.000000这样的日期时间型')
     @staticmethod
     def out_format(value):
-        return value.strftime('%Y-%m-%d %H:%M:%S.%f')
+        if value:
+            return value.strftime('%Y-%m-%d %H:%M:%S.%f')
+        else:
+            return None
 
 
 class Boolen_par(Base_par):
@@ -53,7 +56,7 @@ class Float_par(Base_par):
   
     @staticmethod
     def in_format(value):
-        if isinstance(value,string):
+        if isinstance(value,str):
             try:
                 return float(value)
             except ValueError as identifier:
@@ -71,7 +74,7 @@ class Float_par(Base_par):
 class Integer_par(Base_par):
     @staticmethod
     def in_format(value):
-        if isinstance(value,string):
+        if isinstance(value,str):
             try:
                 return int(value)
             except ValueError as identifier:
@@ -119,8 +122,6 @@ class RequestParse():
     #user = session.query(User).filter(User.id=='5').one()
     def bind_get_request(self,req):
         _dict_query_par=eval(decode64uri(req.args.get("query_string")))
-        print("ok")
-        print(_dict_query_par)
         _filters=_dict_query_par['filters']
         flag=0
         for _filter in _filters:
@@ -130,7 +131,7 @@ class RequestParse():
                 #对于存在的类型
                 pass
             else:
-                raise RestException('索引号：'+str(flag)+';数据:'+str(_dict_query_par)+';字段:'+str(key)+'不是可查询字段')
+                raise RestException('索引号：'+str(flag)+';数据:'+str(_dict_query_par)+';字段:'+_filter['field']+'不是可查询字段')
 
 
 
@@ -201,7 +202,7 @@ def out_args(*dargs, **dkargs):
 
             value=func(*args, **kargs)
 
-            #返回元组一般是出现错误，或者返回处理是否成功
+            #返回元组一般是出现错误，或者返回处理是否成功,还只可能是通过user返回权限等，最灵活的一种方式
             if isinstance(value,tuple):
                 return value
             #返回多条记录
@@ -217,7 +218,7 @@ def out_args(*dargs, **dkargs):
                 last_modified=_dict['last_modified']
                 e_tag=_dict['e_tag']
                 
-                return record_json(value,dkargs['out_fields']),200,{'Last-Modified':last_modified,'E-tag':e_tag}
+                return jsonify(record_json(value,dkargs['out_fields'])),200,{'Last-Modified':last_modified,'E-tag':e_tag}
 
         return _wrapper
     return wrapper
