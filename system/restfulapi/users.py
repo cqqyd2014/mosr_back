@@ -75,7 +75,7 @@ class UsersAPI(MethodView):
             
             rs_object=db_session.query(Users).filter(and_(Users.u_user_name==login_u_user_name , Users.u_user_password==login_u_user_password, Users.u_effective==True)).one_or_none()
             if rs_object==None:
-                return jsonify({'mosr_message':'用户验证出错，请检查你的输入是否有误'}),404
+                return jsonify({'status':False,'message':'用户验证出错，请检查你的输入是否有误'}),404
             else:
                 #成功登陆
                 rs_object.u_last_login_datetime=datetime.datetime.now()
@@ -85,12 +85,12 @@ class UsersAPI(MethodView):
         elif user_uuid_for_permission!=None:
             #查询权限，返回元组结果，先查一级，再查二级，以json返回
             
-            m1s=db_session.query(Modules,RolesPermission,UsersToRoles).filter(and_(Modules.m_uuid == RolesPermission.r_module_uuid,RolesPermission.r_role_uuid==Roles.r_uuid,Modules.m_level==1,UsersToRoles.u_uuid==user_uuid_for_permission) ).order_by(Modules.m_order).all()
+            m1s=db_session.query(Modules,RolesPermission,UsersToRoles).filter(and_(RolesPermission.r_permission.in_(['general','super']),Modules.m_uuid == RolesPermission.r_module_uuid,RolesPermission.r_role_uuid==Roles.r_uuid,Modules.m_level==1,UsersToRoles.u_uuid==user_uuid_for_permission) ).order_by(Modules.m_order).all()
             menus=[]
             for m1,rp1,utr1 in m1s:
                 module={'m_uuid':m1.m_uuid,'m_name':m1.m_name,'m_route_url':m1.m_route_url,'m_type':m1.m_type,'m_icon':m1.m_icon}
                 if (m1.m_type=='sub_module'):
-                    m2s=db_session.query(Modules,RolesPermission,UsersToRoles).filter(and_(Modules.m_uuid == RolesPermission.r_module_uuid,RolesPermission.r_role_uuid==Roles.r_uuid,Modules.m_up_uuid==m1.m_uuid,UsersToRoles.u_uuid==user_uuid_for_permission) ).order_by(Modules.m_order).all()
+                    m2s=db_session.query(Modules,RolesPermission,UsersToRoles).filter(and_(RolesPermission.r_permission.in_(['general','super']),Modules.m_uuid == RolesPermission.r_module_uuid,RolesPermission.r_role_uuid==Roles.r_uuid,Modules.m_up_uuid==m1.m_uuid,UsersToRoles.u_uuid==user_uuid_for_permission) ).order_by(Modules.m_order).all()
                     sub_modules=[]
                     for m2,rp2,utr2 in m2s:
                         sub_module={'m_uuid':m2.m_uuid,'m_name':m2.m_name,'m_route_url':m2.m_route_url,'m_type':m2.m_type,'m_icon':m2.m_icon}

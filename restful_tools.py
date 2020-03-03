@@ -133,6 +133,7 @@ class RequestParse():
             else:
                 raise RestException('索引号：'+str(flag)+';数据:'+str(_dict_query_par)+';字段:'+_filter['field']+'不是可查询字段')
 
+    
 
 
     #初始化参数验证，并校验。需要关注，是否必选、名称和类型
@@ -140,9 +141,10 @@ class RequestParse():
         self.req=req
         args=self.args
         self.in_keys=[]
-
+        #print(args)
         datas = json.loads(request.get_data(as_text=True))
-        
+        #print(datas)
+        #print(args)
         #数据格式是{'array_datas:[{},{}]}
         def generate():
             row_flag=0
@@ -151,9 +153,12 @@ class RequestParse():
                 in_arg={}
                 in_key={}
                 for key in args:
+                    #print(key)
 
                     try:
+                        #print(data[key])
                         key_data=args[key]['type'].in_format(data[key])
+                        #print(key_data)
                         in_arg[key] =key_data
                         #如果是主键，记录下来
                         if args[key]['pk']:
@@ -165,7 +170,9 @@ class RequestParse():
                             raise RestException('索引号：'+str(row_flag)+';数据:'+str(data)+';问题描述：'+args[key]['help'])
                         else:
                             in_arg[key] = None
+                #print('one row end')
                 self.in_keys.append(in_key)
+                #print(in_arg)
                 yield in_arg
             
 

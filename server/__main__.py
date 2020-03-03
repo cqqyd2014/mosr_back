@@ -50,7 +50,8 @@ def create_app(test_config=None):
     
     from system import flask_route as system_route
     app.register_blueprint(system_route.system)
-   
+    from data_manage import flask_route as data_manage_route
+    app.register_blueprint(data_manage_route.data_manage)
     
     app.teardown_appcontext(close_flask_db)
 
