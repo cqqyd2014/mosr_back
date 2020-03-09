@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Numeric, Float, Text, Date, Boolean
 import uuid
 import datetime
+from _datetime import date
 Base = declarative_base()
 
 
@@ -33,6 +34,7 @@ from .tb_role_permission import RolesPermission
 from .tb_module import Modules
 from .tb_neo4j_server_status import Neo4jServerStatus
 from .tb_database_link import DatabaseLink
+from .tb_database_pipe import DatabasePipe
 
 
 def get_db():
@@ -67,6 +69,8 @@ def init_db(db_session):
     m_user_manage=Modules(m_level=2,m_order=4,m_uuid='4e1bd281-2bf9-491f-b3de-61a956ba957a',m_name='用户管理',m_route_url='/user_manage',m_type='module',m_icon='user',m_up_uuid='c1151e32-fa8e-44cd-bb06-03c6950109ce')
     m_data_manage=Modules(m_level=1,m_order=5,m_uuid='4dc914ac-9343-44fb-a16f-e0715c639801',m_name='数据管理',m_route_url='/data_manage',m_type='sub_module',m_icon='database')
     m_data_link=Modules(m_level=2,m_order=6,m_uuid='a5f0af00-198e-4536-955c-4067de05fc80',m_name='数据源',m_route_url='/database_links',m_type='module',m_icon='database',m_up_uuid='4dc914ac-9343-44fb-a16f-e0715c639801')
+    m_data_pipe=Modules(m_level=2,m_order=7,m_uuid='6e3cf278-cb4f-48ad-90ed-6cc2d926ba17',m_name='数据管道',m_route_url='/database_pipes',m_type='module',m_icon='database',m_up_uuid='4dc914ac-9343-44fb-a16f-e0715c639801')
+    m_data_hbase_info=Modules(m_level=2,m_order=8,m_uuid='bc75b9af-fb59-44af-8328-e2446ea04bf0',m_name='Hbase监控',m_route_url='/database_hbase_info',m_type='module',m_icon='database',m_up_uuid='4dc914ac-9343-44fb-a16f-e0715c639801')
     #分配权限，uers组对于大多数人，admin组为管理员，
     #1、为admin组分配首页、组队、用户管理权限的权限，不考虑机构设置
     permit_admin_home=RolesPermission(r_role_uuid='79923c4b-37f2-4e9b-abf5-09ecdaec86db',r_module_uuid='5bc13e30-37f9-4edf-82d5-8f50555d3bbb',r_permission='general')
@@ -75,8 +79,13 @@ def init_db(db_session):
     permit_admin_user_manage=RolesPermission(r_role_uuid='79923c4b-37f2-4e9b-abf5-09ecdaec86db',r_module_uuid='4e1bd281-2bf9-491f-b3de-61a956ba957a',r_permission='general')
     permit_admin_data_manage=RolesPermission(r_role_uuid='79923c4b-37f2-4e9b-abf5-09ecdaec86db',r_module_uuid='4dc914ac-9343-44fb-a16f-e0715c639801',r_permission='general')
     permit_admin_data_link=RolesPermission(r_role_uuid='79923c4b-37f2-4e9b-abf5-09ecdaec86db',r_module_uuid='a5f0af00-198e-4536-955c-4067de05fc80',r_permission='general')
+    permit_admin_data_pipe=RolesPermission(r_role_uuid='79923c4b-37f2-4e9b-abf5-09ecdaec86db',r_module_uuid='6e3cf278-cb4f-48ad-90ed-6cc2d926ba17',r_permission='general')
+    permit_admin_data_hbase_info=RolesPermission(r_role_uuid='79923c4b-37f2-4e9b-abf5-09ecdaec86db',r_module_uuid='bc75b9af-fb59-44af-8328-e2446ea04bf0',r_permission='general')
     #2、为user分配权限
     #数据联接信息
-    databaseLink=DatabaseLink(d_uuid='297bc565-6b95-49c4-858a-e27ce23e8c1e',d_type='Postgresql',d_ip='127.0.0.1',d_port='33133',d_db_name='xywl2019',d_user_name='xywl2019',d_password='Wang1980',d_memo='测试',d_add_datetime=datetime.datetime.now(),d_add_username='admin',last_modified=datetime.datetime.now(),e_tag=str(uuid.uuid1()))
-    db_session.add_all([databaseLink,permit_admin_data_link,permit_admin_data_manage,m_data_link,m_data_manage,permit_admin_system,permit_admin_home,permit_admin_user_manage,permit_admin_team_manage,admin,sp_version,admin_role,add_admin_to_admins,xywl2019,users_role,add_xywl2019_to_users,m_homepage,m_system_manage,m_team_manage,m_user_manage])
+    databaseLink=DatabaseLink(d_alias='Test',d_uuid='297bc565-6b95-49c4-858a-e27ce23e8c1e',d_type='MS SQLSERVER',d_ip='192.168.88.46',d_port='1433',d_db_name='sbdet',d_user_name='sa',d_password='Wang1980',d_memo='测试',d_add_datetime=datetime.datetime.now(),d_add_username='admin',last_modified=datetime.datetime.now(),e_tag=str(uuid.uuid1()),is_delete=False)
+    #数据通道信息
+    databasePipe=DatabasePipe(p_name='测试通道',p_uuid='8fe9caa7-43c7-4fcb-9aaf-7f95ccdc5189',p_data_link_uuid='297bc565-6b95-49c4-858a-e27ce23e8c1e',p_data_link_alias_name='Test',p_table_name='a',p_source_type='Table',p_source_sql='select * from table',last_modified=datetime.datetime.now(),e_tag='09847f70-5aec-4f5e-8217-42b376b5b126',is_delete=False,p_add_datetime=datetime.datetime.now())
+    
+    db_session.add_all([databasePipe,permit_admin_data_hbase_info,m_data_hbase_info,m_data_pipe,permit_admin_data_pipe,databaseLink,permit_admin_data_link,permit_admin_data_manage,m_data_link,m_data_manage,permit_admin_system,permit_admin_home,permit_admin_user_manage,permit_admin_team_manage,admin,sp_version,admin_role,add_admin_to_admins,xywl2019,users_role,add_xywl2019_to_users,m_homepage,m_system_manage,m_team_manage,m_user_manage])
     db_session.commit()

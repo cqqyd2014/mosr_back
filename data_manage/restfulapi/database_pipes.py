@@ -18,46 +18,37 @@ import urllib
 
 from common.database_common import DatabaseCommon
 from _datetime import date
+from orm.tb_database_pipe import DatabasePipe
 out_fields = {
-    'd_uuid': String_par,
-    'd_type':String_par,
-    'd_ip':String_par,
-    'd_port':String_par,
-    'd_db_name':String_par,
-    'd_user_name':String_par,
-    'd_password':String_par,
-    'd_memo':String_par,
-    'd_url':String_par,
-    'd_add_datetime':DateTime_par,
-    'd_add_username':String_par,
-    'd_alias':String_par,
+    'p_uuid': String_par,
+    'p_data_link_uuid':String_par,
+    'p_data_link_alias_name':String_par,
+    'p_table_name':String_par,
+    'p_source_type':String_par,
+    'p_source_sql':String_par,
+    'p_add_datetime':DateTime_par,
     'is_delete':Boolean_par,
-    
-    
+    'p_name':String_par,
     
 }
 
 
 
 requestParse=RequestParse()
-requestParse.add_argument(arg_name='d_uuid',_type=String_par,location='form',required=True,help='UUID编码是必须的',pk=True)
-requestParse.add_argument(arg_name='d_type',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_ip',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_port',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_db_name',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_user_name',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_password',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_memo',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_add_datetime',_type=DateTime_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_add_username',_type=String_par,location='form',required=False,help=None)
+requestParse.add_argument(arg_name='p_uuid',_type=String_par,location='form',required=True,help='UUID编码是必须的',pk=True)
+requestParse.add_argument(arg_name='p_data_link_uuid',_type=String_par,location='form',required=False,help=None)
+requestParse.add_argument(arg_name='p_data_link_alias_name',_type=String_par,location='form',required=False,help=None)
+requestParse.add_argument(arg_name='p_table_name',_type=String_par,location='form',required=False,help=None)
+requestParse.add_argument(arg_name='p_source_type',_type=String_par,location='form',required=False,help=None)
+requestParse.add_argument(arg_name='p_source_sql',_type=String_par,location='form',required=False,help=None)
 requestParse.add_argument(arg_name='last_modified',_type=DateTime_par,location='form',required=False,help=None)
 requestParse.add_argument(arg_name='e_tag',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_url',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_alias',_type=String_par,location='form',required=False,help=None)
 requestParse.add_argument(arg_name='is_delete',_type=Boolean_par,location='form',required=False,help=None)
+requestParse.add_argument(arg_name='p_add_datetime',_type=DateTime_par,location='form',required=False,help=None)
+requestParse.add_argument(arg_name='p_name',_type=String_par,location='form',required=False,help=None)
 
 
-class DatabaseLinksAPI(MethodView):
+class DatabasePipesAPI(MethodView):
    
     '''
     #查询所有记录
@@ -76,28 +67,19 @@ class DatabaseLinksAPI(MethodView):
     
     #查询单个记录，通过主键
     @out_args(out_fields=out_fields)
-    def get(self,d_uuid=None,check_type=None,check_ip=None,check_db_port=None,check_db_name=None,check_db_username=None,check_db_password=None,save_type=None,save_ip=None,save_db_port=None,save_db_name=None,save_db_username=None,save_db_password=None,save_last_modified=None,save_e_tag=None,save_username=None,save_alias=None,save_memo=None,save_db_uuid=None):
+    def get(self,p_uuid=None):
         db_session=db.get_flask_db()
         
-        if  d_uuid==None and check_type==None and save_type==None:
+        if  p_uuid==None:
             #查询所有记录
             gets=[]
-            gets=db_session.query(DatabaseLink).filter(DatabaseLink.is_delete==False).order_by(DatabaseLink.d_add_datetime).all()
+            gets=db_session.query(DatabasePipe).filter(DatabasePipe.is_delete==False).order_by(DatabasePipe.p_add_datetime).all()
             return gets
-        elif d_uuid!=None:
+        elif p_uuid!=None:
             #查询主键
-            get_object=db_session.query(DatabaseLink).filter(DatabaseLink.d_uuid==d_uuid).one_or_none()
+            get_object=db_session.query(DatabasePipe).filter(DatabasePipe.p_uuid==p_uuid).one_or_none()
             return get_object
-        elif check_type!=None:
-            databaseCommon=DatabaseCommon(db_type=urllib.parse.unquote(check_type),db_address=urllib.parse.unquote(check_ip),db_port=urllib.parse.unquote(check_db_port),db_name=urllib.parse.unquote(check_db_name),db_username=urllib.parse.unquote(check_db_username),db_password=urllib.parse.unquote(check_db_password))
-            rs=databaseCommon.checkConnection()
-            if (rs=='连接成功'):
-                return jsonify({'status':True,'message':rs}),200
-            else:
-                return jsonify({'status':False,'message':rs}),200
-        elif save_type!=None:
-            databaseLink=DatabaseLink()
-            return jsonify('ok'),200
+        
                 
             
             

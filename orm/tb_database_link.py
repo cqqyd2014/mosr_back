@@ -28,6 +28,7 @@ class DatabaseLink(Base):
     d_url=Column(String(512))
     last_modified=Column(DateTime,default=datetime.datetime.now)
     e_tag=Column(String(36),default=str(uuid.uuid4()))
+    is_delete=Column(Boolean)
     
 
 

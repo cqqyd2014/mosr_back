@@ -37,7 +37,7 @@ class DateTime_par(Base_par):
             return None
 
 
-class Boolen_par(Base_par):
+class Boolean_par(Base_par):
     @staticmethod
     def in_format(value):
         if value in ('True','true','1',1):

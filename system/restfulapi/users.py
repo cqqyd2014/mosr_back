@@ -22,7 +22,7 @@ out_fields = {
     'u_user_password':String_par,
     'u_nickname':String_par,
     'u_memo':String_par,
-    'u_effective':Boolen_par,
+    'u_effective':Boolean_par,
     'u_last_login_datetime':DateTime_par
     
     

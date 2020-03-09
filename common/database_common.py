@@ -249,7 +249,7 @@ where a.name='03对手为正贵的对公账号的流水信息'
     
 
     def getConnection(self):
-        print(self.db_type)
+        
         try:
                 
             if self.db_type=='MS SQLSERVER':
@@ -263,7 +263,7 @@ where a.name='03对手为正贵的对公账号的流水信息'
             return sys.exc_info()[0]
         
         else:
-            print("connected ok")
+            
             return "Connected to database"
 
 

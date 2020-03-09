@@ -2,7 +2,7 @@
 Created on 2020年2月23日
 
 @author: xywl2019
-数据联接资源restfulapi
+Hbase基本信息及管理restfulapi
 '''
 
 from common.mosr_message import *
@@ -16,23 +16,48 @@ from restful_tools import *
 from sqlalchemy import and_,or_
 import urllib
 
+
+
 from common.database_common import DatabaseCommon
 from _datetime import date
+import requests
+from data_manage import hbase_ip
+
+
+def get_hbase_rest(url):
+    _header = {'content-type': 'application/json','Accept': 'application/json',
+           'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:22.0) Gecko/20100101 Firefox/22.0'}
+    
+    return requests.get("http://"+hbase_ip+":2019/"+url,headers=_header).json()
+
+def get_version():
+    return get_hbase_rest("version/cluster")
+    
+def get_namespaces():
+
+    return get_hbase_rest("namespaces")
+
+def get_status():
+    return get_hbase_rest("status/cluster")
+
+def get_all_tables():
+    all_tables=get_hbase_rest("")['table']
+    for table in all_tables:
+        table_schema=get_table_schema(table['name'])
+        table_regions=get_table_regions(table['name'])
+        table['schema']=table_schema
+        table['regions']=table_regions
+        
+    
+    return all_tables
+
+def get_table_schema(table_name):
+    return get_hbase_rest(table_name+"/schema")
+
+def get_table_regions(table_name):
+    return get_hbase_rest(table_name+"/regions")
 out_fields = {
     'd_uuid': String_par,
-    'd_type':String_par,
-    'd_ip':String_par,
-    'd_port':String_par,
-    'd_db_name':String_par,
-    'd_user_name':String_par,
-    'd_password':String_par,
-    'd_memo':String_par,
-    'd_url':String_par,
-    'd_add_datetime':DateTime_par,
-    'd_add_username':String_par,
-    'd_alias':String_par,
-    'is_delete':Boolean_par,
-    
     
     
 }
@@ -41,65 +66,44 @@ out_fields = {
 
 requestParse=RequestParse()
 requestParse.add_argument(arg_name='d_uuid',_type=String_par,location='form',required=True,help='UUID编码是必须的',pk=True)
-requestParse.add_argument(arg_name='d_type',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_ip',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_port',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_db_name',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_user_name',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_password',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_memo',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_add_datetime',_type=DateTime_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_add_username',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='last_modified',_type=DateTime_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='e_tag',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_url',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='d_alias',_type=String_par,location='form',required=False,help=None)
-requestParse.add_argument(arg_name='is_delete',_type=Boolean_par,location='form',required=False,help=None)
 
 
-class DatabaseLinksAPI(MethodView):
-   
-    '''
-    #查询所有记录
-    @out_args(out_fields=out_fields)
-    def get(self):
-        gets=[]
-        if  'query_string' in request.args:
-            try:
-                requestParse.bind_get_request(request)
-            except RestException as e:
-                return jsonify({'return_status':'error','err_message':e.message}),500
-        else:
-            gets=db.get_flask_db().query(SystemPar).all()
-        return gets
-    '''
-    
+class HbaseAdminAPI(MethodView):
+
     #查询单个记录，通过主键
     @out_args(out_fields=out_fields)
-    def get(self,d_uuid=None,check_type=None,check_ip=None,check_db_port=None,check_db_name=None,check_db_username=None,check_db_password=None,save_type=None,save_ip=None,save_db_port=None,save_db_name=None,save_db_username=None,save_db_password=None,save_last_modified=None,save_e_tag=None,save_username=None,save_alias=None,save_memo=None,save_db_uuid=None):
-        db_session=db.get_flask_db()
-        
-        if  d_uuid==None and check_type==None and save_type==None:
-            #查询所有记录
-            gets=[]
-            gets=db_session.query(DatabaseLink).filter(DatabaseLink.is_delete==False).order_by(DatabaseLink.d_add_datetime).all()
-            return gets
-        elif d_uuid!=None:
-            #查询主键
-            get_object=db_session.query(DatabaseLink).filter(DatabaseLink.d_uuid==d_uuid).one_or_none()
-            return get_object
-        elif check_type!=None:
-            databaseCommon=DatabaseCommon(db_type=urllib.parse.unquote(check_type),db_address=urllib.parse.unquote(check_ip),db_port=urllib.parse.unquote(check_db_port),db_name=urllib.parse.unquote(check_db_name),db_username=urllib.parse.unquote(check_db_username),db_password=urllib.parse.unquote(check_db_password))
-            rs=databaseCommon.checkConnection()
-            if (rs=='连接成功'):
-                return jsonify({'status':True,'message':rs}),200
-            else:
-                return jsonify({'status':False,'message':rs}),200
-        elif save_type!=None:
-            databaseLink=DatabaseLink()
-            return jsonify('ok'),200
-                
-            
+    def get(self,param=None,param1=None,param2=None,param3=None):
+
+        #只有方法没有参数
+        args = []
+        kwargs = {}
+        if (param!=None and param1==None):
+            try:
+                return jsonify(eval(param)()),200
+            except NameError as e:
+                return "{}",404
+        elif (param!=None and param1!=None and param2==None):
+            args = [param1]
+        elif (param!=None and param1!=None and param2!=None and param3==None):
+            args = [param1,param2]
+        elif (param!=None and param1!=None and param2!=None and param3!=None):
+            args = [param1,param2,param3]
+        if args==[]:
+            return "{}",200
+        else:
+            return jsonify(eval(param)(*args, **kwargs)),200
+    '''
+        if param=='version':
+            return jsonify(get_version()),200#{  "Version": "2.2.3"}
+
+        elif param=='status':
+            return jsonify(get_status()),200
+        elif param=='namespaces':
+            return jsonify(get_namespaces()),200
+        elif param=='all_tables':
+            return jsonify(get_all_tables()),200#{  "table": []}
+                    
+    '''
             
     
     #新建记录
