@@ -74,6 +74,7 @@ class DatabasePipesAPI(MethodView):
             #查询所有记录
             gets=[]
             gets=db_session.query(DatabasePipe).filter(DatabasePipe.is_delete==False).order_by(DatabasePipe.p_add_datetime).all()
+            
             return gets
         elif p_uuid!=None:
             #查询主键

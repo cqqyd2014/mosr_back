@@ -147,6 +147,38 @@ class DatabaseCommon:
         return new_rows
         
         
+    def getRowCellsBySQLTop(self,sql,topnum):
+        if self.db_type=='MS SQLSERVER':
+            sql="select top "+str(topnum)+" * from ("+sql+") a"
+        if self.db_type=='ORACLE':
+            sql="select * from ("+sql+ ") a where rownum<"+str(topnum)
+        return self.getRowCellsBySQL(sql)
+        
+    def getRowCellsBySQL(self,sql):
+        cursor = self.conn.cursor(as_dict=True)
+        print(sql)
+        cursor.execute(sql)
+        #print(cursor)
+        data_rows=[]
+        print(cursor.rownumber)
+        print(cursor.description)
+        cols=[]
+        for _col in cursor.description:
+            #type_code:1-字符串,5-数字
+            _col_object={'name':_col[0],'type_code':_col[1]}
+            cols.append(_col_object)
+        for row in cursor:
+            
+            data_row={}
+            
+            for index in cols:
+                cell=row[index['name']]
+
+                data_row[index['name']]=cell
+            #print(data_row)
+            data_rows.append(data_row)
+        cursor.close()
+        return {'datas':data_rows,'cols':cols}
 
 
     def getTopRowCells(self,table_name,top_rows,cols_list):

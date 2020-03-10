@@ -39,6 +39,10 @@ data_manage.add_url_rule('/database_links/check_db_link/<string:check_type>/<str
 data_manage.add_url_rule('/database_links/', view_func=DatabaseLinksAPI.as_view('database_links_save'),methods=['POST'])
 data_manage.add_url_rule('/database_links/', view_func=DatabaseLinksAPI.as_view('database_links_update'),methods=['PUT'])
 data_manage.add_url_rule('/database_links/', view_func=DatabaseLinksAPI.as_view('database_links_delete'),methods=['DELETE'])
+data_manage.add_url_rule('/database_links/get_tables/<string:get_table_d_uuid>', view_func=DatabaseLinksAPI.as_view('database_links_get_tables'),methods=['GET'])
+data_manage.add_url_rule('/database_links/get_sql_datas/<string:get_sql_datas_uuid>/<string:get_sql_datas_sql>', view_func=DatabaseLinksAPI.as_view('database_links_get_sql_datas'),methods=['GET'])
+data_manage.add_url_rule('/database_links/get_top_sql_datas/<string:get_top_sql_datas_uuid>/<string:get_top_sql_datas_sql>/<int:get_top_sql_datas_topnum>', view_func=DatabaseLinksAPI.as_view('database_links_get_top_sql_datas'),methods=['GET'])
+
 data_manage.add_url_rule('/hbase_admin/<string:param>',view_func=HbaseAdminAPI.as_view('hbase_manage_param'),methods=['GET'])
 data_manage.add_url_rule('/hbase_admin/<string:param>/<string:param1>',view_func=HbaseAdminAPI.as_view('hbase_manage_param1'),methods=['GET'])
 data_manage.add_url_rule('/hbase_admin/<string:param>/<string:param1>/<string:param2>',view_func=HbaseAdminAPI.as_view('hbase_manage_param2'),methods=['GET'])

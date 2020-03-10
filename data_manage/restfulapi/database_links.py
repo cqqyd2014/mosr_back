@@ -76,10 +76,10 @@ class DatabaseLinksAPI(MethodView):
     
     #查询单个记录，通过主键
     @out_args(out_fields=out_fields)
-    def get(self,d_uuid=None,check_type=None,check_ip=None,check_db_port=None,check_db_name=None,check_db_username=None,check_db_password=None,save_type=None,save_ip=None,save_db_port=None,save_db_name=None,save_db_username=None,save_db_password=None,save_last_modified=None,save_e_tag=None,save_username=None,save_alias=None,save_memo=None,save_db_uuid=None):
+    def get(self,get_top_sql_datas_topnum=None,get_top_sql_datas_uuid=None,get_sql_datas_sql=None,get_top_sql_datas_sql=None,get_sql_datas_uuid=None,get_table_d_uuid=None,d_uuid=None,check_type=None,check_ip=None,check_db_port=None,check_db_name=None,check_db_username=None,check_db_password=None,save_type=None,save_ip=None,save_db_port=None,save_db_name=None,save_db_username=None,save_db_password=None,save_last_modified=None,save_e_tag=None,save_username=None,save_alias=None,save_memo=None,save_db_uuid=None):
         db_session=db.get_flask_db()
         
-        if  d_uuid==None and check_type==None and save_type==None:
+        if  d_uuid==None and get_top_sql_datas_topnum==None and get_sql_datas_sql==None and get_table_d_uuid==None and check_type==None and save_type==None:
             #查询所有记录
             gets=[]
             gets=db_session.query(DatabaseLink).filter(DatabaseLink.is_delete==False).order_by(DatabaseLink.d_add_datetime).all()
@@ -87,6 +87,7 @@ class DatabaseLinksAPI(MethodView):
         elif d_uuid!=None:
             #查询主键
             get_object=db_session.query(DatabaseLink).filter(DatabaseLink.d_uuid==d_uuid).one_or_none()
+            
             return get_object
         elif check_type!=None:
             databaseCommon=DatabaseCommon(db_type=urllib.parse.unquote(check_type),db_address=urllib.parse.unquote(check_ip),db_port=urllib.parse.unquote(check_db_port),db_name=urllib.parse.unquote(check_db_name),db_username=urllib.parse.unquote(check_db_username),db_password=urllib.parse.unquote(check_db_password))
@@ -95,9 +96,27 @@ class DatabaseLinksAPI(MethodView):
                 return jsonify({'status':True,'message':rs}),200
             else:
                 return jsonify({'status':False,'message':rs}),200
-        elif save_type!=None:
-            databaseLink=DatabaseLink()
-            return jsonify('ok'),200
+        elif get_table_d_uuid!=None:
+            #获取表列表，首先得到link再连接过去获取
+            get_object=db_session.query(DatabaseLink).filter(DatabaseLink.d_uuid==get_table_d_uuid).one_or_none()
+            #print(get_object.d_type)
+            databaseCommon=DatabaseCommon(db_type=get_object.d_type,db_address=get_object.d_ip,db_port=get_object.d_port,db_name=get_object.d_db_name,db_username=get_object.d_user_name,db_password=get_object.d_password)
+            databaseCommon.getConnection()
+            tables=copy.deepcopy(databaseCommon.getTables())
+            databaseCommon.closeConnection()
+            return jsonify({'tables':tables}),200
+        elif get_top_sql_datas_sql!=None and get_top_sql_datas_topnum!=None and get_top_sql_datas_uuid!=None:
+            print(get_top_sql_datas_sql)
+            print(get_top_sql_datas_uuid)
+            get_object=db_session.query(DatabaseLink).filter(DatabaseLink.d_uuid==get_top_sql_datas_uuid).one_or_none()
+            rs={}
+            databaseCommon=DatabaseCommon(db_type=get_object.d_type,db_address=get_object.d_ip,db_port=get_object.d_port,db_name=get_object.d_db_name,db_username=get_object.d_user_name,db_password=get_object.d_password)
+            try:
+                databaseCommon.getConnection()
+                rs=databaseCommon.getRowCellsBySQLTop(get_top_sql_datas_sql,get_top_sql_datas_topnum)
+            finally:
+                databaseCommon.closeConnection()
+            return jsonify(rs),200
                 
             
             
